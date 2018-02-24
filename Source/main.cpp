@@ -6,6 +6,11 @@
 #include <assert.h>
 #include <memory>
 
+
+// TODO: Typedef imageid
+typedef std::vector<class Image> ImageVector;
+typedef std::vector<class ImageStack> ImageStackVector;
+
 enum class ImageType { JPEG, JPEG2000, BMP, UNKNOWN };
 std::string ImageTypeToString(ImageType type)
 {
@@ -21,7 +26,7 @@ ImageType ImageTypeStringToEnum(std::string type)
 	return ImageType::UNKNOWN;
 }
 
-class ImageInfo
+class Image
 {
 public:
 	ImageType type = ImageType::BMP;
@@ -29,13 +34,13 @@ public:
 	unsigned int height = 0;
 
 public:
-	~ImageInfo() = default;
+	~Image() = default;
 
-	ImageInfo(ImageType imageType, unsigned int imageWidth, unsigned int imageHeight)
-		: type{ imageType }, width{ imageWidth }, height{ imageHeight }
+	Image(ImageType imageType, unsigned int imageWidth, unsigned int imageHeight)
+		: type { imageType }, width{ imageWidth }, height{ imageHeight }
 	{}
 
-	ImageInfo(ImageType imageType, int imageWidth, int imageHeight)
+	Image(ImageType imageType, int imageWidth, int imageHeight)
 		: type{ imageType }
 	{
 		assert(imageWidth >= 0 && imageHeight >= 0);
@@ -89,52 +94,71 @@ private:
 	}
 };
 
-class ImageInfoStack
+class ImageStack
 {
 private:
-	std::vector<unsigned int> imageInfoIds;
-	//std::vector<ImageInfo> images;
+	std::vector<const Image*> imagePtrs;
 
 public:
-	ImageInfoStack(std::vector<unsigned int>& _imageInfoIds) : imageInfoIds{_imageInfoIds} {};
-	~ImageInfoStack() = default;
-
-	bool ContainsImageInfo(unsigned int id) const
+	ImageStack(const ImageVector& _images, std::vector<unsigned int>& _ImageIds)
 	{
-		return (std::find(imageInfoIds.begin(), imageInfoIds.end(), id) != imageInfoIds.end());
-	}
-
-	bool ContainsAnyImageInfo(std::vector<unsigned int>& ids) const
-	{
-		auto result = std::find_first_of(ids.begin(), ids.end(), imageInfoIds.begin(), imageInfoIds.end());
-		return (result != ids.end());
-	}
-
-	unsigned int GetSizeInBytes(const std::vector<ImageInfo>& imageInfos) const
-	{
-		if (!ContainsImageInfo(imageInfos.size()))
+		for (auto& id : _ImageIds)
 		{
-			throw std::invalid_argument("ImageInfoStack contains invalid references to ImageInfos.");
+			imagePtrs.push_back(&_images[id-1]); // TODO: Fix code or input so that IDs are displayed from 1...?
+		}
+	};
+
+	~ImageStack() = default;
+
+	bool ContainsImage(const Image& image) const
+	{
+		for (const auto& imagePtr : imagePtrs)
+		{
+			if (imagePtr == &image) return true;
+		}
+		
+		return false;
+	}
+
+	bool ContainsAnyImage(const ImageVector& images) const
+	{
+		for (const auto& image : images)
+		{
+			if (std::find(imagePtrs.begin(), imagePtrs.end(), &image) != imagePtrs.end())
+			{
+				return true;
+			}
 		}
 
+		return false;
+	}
+
+	unsigned int GetSizeInBytes() const
+	{
 		unsigned int totalSize = 0;
-		for (const auto& id : imageInfoIds)
+		for (const auto& imagePtr : imagePtrs)
 		{
-			totalSize += imageInfos[id].GetSizeInBytes();
+			if (imagePtr)
+			{
+				totalSize += imagePtr->GetSizeInBytes();
+			}
 		}
-
+		// TODO: Make sure this is correct
 		return totalSize;
 	}
 
 	std::string ToString() const
 	{
 		std::string output;
-		for (auto v : imageInfoIds)
-		{
-			output += std::to_string(v) + " ";
-		}
+		output += "\t(" + std::to_string(imagePtrs.size()) + " images, " + std::to_string(GetSizeInBytes()) + " bytes)\n";
 
-		//output += "\t\t" + std::to_string(GetSizeInBytes());
+		for (const auto& imagePtr : imagePtrs)
+		{
+			if (imagePtr)
+			{
+				output += "\t\t" + imagePtr->ToString() + "\n";
+			}
+		}
 
 		return output;
 	}
@@ -172,7 +196,7 @@ void SplitStringUsingRegex(const std::string &str, std::vector<std::string>& tok
 	tokens.assign(tokensBegin, tokensEnd);
 }
 
-enum class InputCommand { NoInput, EndOfInput, AddImageGroup, AddImageType, Invalid, Successful };
+enum class InputCommand { NoInput, EndOfInput, AddImageStack, AddImageType, Invalid, Successful };
 InputCommand InterpretCommand(const std::string &command)
 {
 	if (command == "") return InputCommand::NoInput;
@@ -189,12 +213,12 @@ InputCommand InterpretCommand(const std::string &command)
 
 	if      (elementIter == validCommands.end())	return InputCommand::Invalid;
 	else if (*elementIter == validCommands[0])		return InputCommand::EndOfInput;
-	else if (*elementIter == validCommands[1])		return InputCommand::AddImageGroup;
+	else if (*elementIter == validCommands[1])		return InputCommand::AddImageStack;
 	else											return InputCommand::AddImageType;
 }
 
 // TODO: typedef parameters?
-InputCommand AttemptAddImageInfoFromInput(const std::string& imageTypeStr, const std::vector<std::string>& parameters, std::vector<ImageInfo>& imageInfos)
+InputCommand AttemptAddImageFromInput(const std::string& imageTypeStr, const std::vector<std::string>& parameters, ImageVector& Images)
 {
 	ImageType imageType = ImageTypeStringToEnum(imageTypeStr);
 
@@ -217,7 +241,7 @@ InputCommand AttemptAddImageInfoFromInput(const std::string& imageTypeStr, const
 		}
 		else
 		{
-			imageInfos.push_back(ImageInfo(imageType, width, height));
+			Images.push_back(Image(imageType, width, height));
 			return InputCommand::Successful;
 		}
 	}
@@ -225,7 +249,7 @@ InputCommand AttemptAddImageInfoFromInput(const std::string& imageTypeStr, const
 	return InputCommand::Invalid;
 }
 
-InputCommand AttemptAddImageGroupFromInput(const std::vector<std::string>& parameters, const std::vector<ImageInfo>& imageInfos, std::vector<ImageInfoStack>& imageGroups)
+InputCommand AttemptAddImageStackFromInput(const std::vector<std::string>& parameters, const ImageVector& images, ImageStackVector& imageStacks)
 {
 	// TODO:  An image should not be allowed to belong to multiple groups and 	//		(done by design) a group of images cannot be part of another group.
 	if (parameters.size() == 0)
@@ -243,7 +267,7 @@ InputCommand AttemptAddImageGroupFromInput(const std::vector<std::string>& param
 			{
 				int id = std::stoi(param);
 				int arrayIndex = id - 1;
-				if (arrayIndex < 0 || arrayIndex >= imageInfos.size())
+				if (arrayIndex < 0 || arrayIndex >= images.size())
 				{
 					std::cout << " " << param << " does not match any of the image indices. Try again.\n";
 					return InputCommand::Invalid;
@@ -251,26 +275,27 @@ InputCommand AttemptAddImageGroupFromInput(const std::vector<std::string>& param
 
 				imageIds.push_back(abs(id));
 			}
-			catch (const std::invalid_argument& ia) 
+			catch (...)
 			{
 				std::cout << " " << param << " is not a valid parameter. Try again.\n";
 				return InputCommand::Invalid;
 			}
 		}
 
-		// Verify that images does not exist in other imageGroups
-		for (const auto& imageGroup : imageGroups)
+		// Verify that images does not exist in other stacks
+		for (const auto& imageStack : imageStacks)
 		{
-			if (imageGroup.ContainsAnyImageInfo(imageIds))
+			for (const auto& id : imageIds)
 			{
-				std::cout << " One of the images "; 
-				CoutVector(imageIds);
-				std::cout << " already exists in another group. Try again.\n";
-				return InputCommand::Invalid;
+				if (imageStack.ContainsImage(images[id]))
+				{
+					std::cout << " The image [" + std::to_string(id) + "] already exists in another group. Try again.\n";
+					return InputCommand::Invalid;
+				}
 			}
 		}
 
-		imageGroups.push_back(ImageInfoStack(imageIds));
+		imageStacks.push_back(ImageStack(images, imageIds));
 		return InputCommand::Successful;
 	}
 
@@ -291,8 +316,8 @@ R"(	Storage calculator by Denny Lindberg
 
 
 )";
-	std::vector<ImageInfo> images;
-	std::vector<ImageInfoStack> imageGroups;
+	ImageVector images;
+	ImageStackVector stacks;
 
 	std::string userInputStr;
 	std::vector<std::string> inputTokens;
@@ -325,12 +350,12 @@ R"(	Storage calculator by Denny Lindberg
 			std::cout << "\n The input [" << commandstr << "] is not a valid command!\n\n";
 			break;
 
-		case InputCommand::AddImageGroup:
-			command = AttemptAddImageGroupFromInput(parameters, images, imageGroups);
+		case InputCommand::AddImageStack:
+			command = AttemptAddImageStackFromInput(parameters, images, stacks);
 			break;
 
 		case InputCommand::AddImageType:
-			command = AttemptAddImageInfoFromInput(commandstr, parameters, images);
+			command = AttemptAddImageFromInput(commandstr, parameters, images);
 			break;
 		}
 
@@ -341,18 +366,18 @@ R"(	Storage calculator by Denny Lindberg
 			std::cout << "\tImages\n";
 			if (images.size() == 0) std::cout << "\tNo images";
 
-			int count = 1;
+			int counter = 0;
 			for (const auto& image : images)
 			{
-				std::cout << "\t[" << count++ << "]\t" << image.ToString() << std::endl;
+				std::cout << "\t[" << ++counter << "]\t" << image.ToString() << std::endl;
 			}
 			std::cout << "\n\n";
 
 			std::cout << "\tImage Groups\n";
-			if (imageGroups.size() == 0) std::cout << "\tNo image groups";
-			for (const auto& group : imageGroups)
+			if (stacks.size() == 0) std::cout << "\tNo image groups";
+			for (const auto& stack : stacks)
 			{
-				std::cout << "\tG\t" << group.ToString() << std::endl;
+				std::cout << stack.ToString() << std::endl;
 			}
 
 			std::cout << "\n\n\n";
