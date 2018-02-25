@@ -14,9 +14,9 @@ namespace Image
 
 	Image::Type TypeToEnum(std::string type)
 	{
-		if (type == "J" || type == "JPEG")		 return Image::JPEG;
-		if (type == "JP2" || type == "JPEG2000") return Image::JPEG2000;
-		if (type == "BMP")						 return Image::BMP;
+		if (type == "JPEG")		return Image::JPEG;
+		if (type == "JPEG2000")	return Image::JPEG2000;
+		if (type == "BMP")		return Image::BMP;
 
 		return Image::UNKNOWN;
 	}
@@ -30,6 +30,31 @@ namespace Image
 	{
 		const std::vector<std::string> enumNames = TypesToStringVector();
 		return enumNames[(int)type];
+	}
+
+	std::string StorageSizeToString(Image::StorageSize size)
+	{
+		// Formats value from 1234567 to string "1 234 567"
+
+		std::string sizeStr(std::to_string(size));
+		std::string output(sizeStr.size() + sizeStr.size() / 3, ' ');
+
+		size_t outputIndex  = output.size();
+		size_t sizeStrIndex = sizeStr.size();
+		size_t count = 0;
+		while (outputIndex > 0 && sizeStrIndex > 0)
+		{
+			output[--outputIndex] = sizeStr[--sizeStrIndex];
+
+			count++;
+			if (count >= 3)
+			{
+				count = 0;
+				--outputIndex;
+			}
+		}
+
+		return output;
 	}
 
 	class Info
@@ -73,7 +98,7 @@ namespace Image
 		{
 			std::string typeStr = Image::TypeToString(type);
 			std::string padding(10 - typeStr.size(), ' ');
-			return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + std::to_string(GetSizeInBytes()) + " bytes";
+			return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + Image::StorageSizeToString(GetSizeInBytes()) + " bytes";
 		}
 
 	private:

@@ -61,6 +61,22 @@ public:
 		return imageStacks.size();
 	}
 
+	Image::StorageSize GetSizeInBytes() const
+	{
+		Image::StorageSize totalSize = 0;
+		for (auto &image : images)
+		{
+			totalSize += image.GetSizeInBytes();
+		}
+
+		for (auto &stack : imageStacks)
+		{
+			totalSize += stack.GetSizeInBytes();
+		}
+
+		return totalSize;
+	}
+
 	std::string ToString() const
 	{
 		std::string outputString;
@@ -87,7 +103,7 @@ public:
 		{
 			outputString += stack.ToString() + "\n";
 		}
-		outputString += "\n\n";
+		outputString += "\n\n\n\tTotal Size: " + Image::StorageSizeToString(GetSizeInBytes()) + " bytes\n\n";
 
 		return outputString;
 	}

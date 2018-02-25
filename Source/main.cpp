@@ -10,7 +10,7 @@ enum class InputCommand { NoInput, EndOfInput, AddImageStack, AddImageType, Inva
 void GetCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters);
 void SplitStringUsingRegex(const std::string& str, std::vector<std::string>& stringTokens, const std::regex expression);
 InputCommand InterpretCommand(std::string command);
-InputCommand AttemptToAddImageFromInput(const std::string& imageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator);
+InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator);
 InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, ImageStorageEstimator& storageEstimator);
 
 int main()
@@ -105,7 +105,7 @@ InputCommand InterpretCommand(std::string command)
 	std::vector<std::string> validCommands = {
 		"Q",				// Quit (end of input)
 		"G",				// Image Group (stack)
-		"J", "JPEG",		// Image types
+		"J", "JPG", "JPEG", // Image types
 		"JP2", "JPEG2000",
 		"BMP"
 	};
@@ -118,17 +118,27 @@ InputCommand InterpretCommand(std::string command)
 	else											return InputCommand::AddImageType;
 }
 
-InputCommand AttemptToAddImageFromInput(const std::string& imageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
+InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
 {
-	Image::Type imageType = Image::TypeToEnum(imageTypeStr);
+	std::string internalImageType(userInputImageTypeStr);
+	if (userInputImageTypeStr == "J" || userInputImageTypeStr == "JPG")
+	{
+		internalImageType = "JPEG";
+	}
+	else if (userInputImageTypeStr == "JP2")
+	{
+		internalImageType = "JPEG2000";
+	}
+
+	Image::Type imageType = Image::TypeToEnum(internalImageType);
 
 	if (imageType == Image::UNKNOWN)
 	{
-		PrintWarning(" The input [" + imageTypeStr + "] is an unknown image type. \n");
+		PrintWarning(" The input [" + userInputImageTypeStr + "] is an unknown image type. \n");
 	}
 	else if (parameters.size() < 2 || parameters.size() > 2)
 	{
-		PrintWarning(" Invalid image dimensions. Please type the command in this form: [" + imageTypeStr + " width height]\n");
+		PrintWarning(" Invalid image dimensions. Please type the command in this form: [" + userInputImageTypeStr + " width height]\n");
 	}
 	else
 	{
