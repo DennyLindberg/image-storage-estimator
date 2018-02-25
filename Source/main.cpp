@@ -1,44 +1,134 @@
-#include <iostream>
 #include <string>
-#include <regex>
 #include <vector>
 
+#include "ConsoleUtils.h"
 #include "ImageStorageEstimator.h"
 
 typedef std::vector<std::string> InputParameters;
-
 enum class InputCommand { NoInput, EndOfInput, AddImageStack, AddImageType, Invalid, Successful };
-InputCommand InterpretCommand(const std::string &command)
+
+void GetCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters);
+void SplitStringUsingRegex(const std::string& str, std::vector<std::string>& stringTokens, const std::regex expression);
+InputCommand InterpretCommand(std::string command);
+InputCommand AttemptToAddImageFromInput(const std::string& imageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator);
+InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, ImageStorageEstimator& storageEstimator);
+
+int main()
+{
+	std::cout << 
+R"(######################################################################
+
+	Storage calculator by Denny Lindberg
+
+	Enter one line for each image/group using the formats: 
+		"type width height"
+		"G i, i, ..." 
+		
+		Exit with "Q"
+
+######################################################################
+
+)";
+
+	ImageStorageEstimator storageEstimator;
+
+	std::string userInputStr;
+	std::string commandStr;
+	InputCommand command = InputCommand::NoInput;
+	InputParameters parameters;
+	while (command != InputCommand::EndOfInput)
+	{
+		// Fetch input
+		PrintNewLine("Add image/group: ");
+		std::getline(std::cin, userInputStr);
+		GetCommandAndParameters(userInputStr, commandStr, parameters);
+
+		// Evaluate command
+		command = InterpretCommand(commandStr);
+		switch (command)
+		{
+		case InputCommand::NoInput:
+			command = InputCommand::Successful;
+			break;
+
+		case InputCommand::Invalid:
+			PrintWarning("\n The input [" + commandStr + "] is not a valid command!\n");
+			break;
+
+		case InputCommand::AddImageStack:
+			command = AttemptToAddImageStackFromInput(parameters, storageEstimator);
+			break;
+
+		case InputCommand::AddImageType:
+			command = AttemptToAddImageFromInput(commandStr, parameters, storageEstimator);
+			break;
+		}
+
+		if (command == InputCommand::Successful)
+		{
+			PrintNewLine(storageEstimator.ToString());
+		}
+	} 
+	
+	PrintNewLine("Press enter to quit...");
+	std::getline(std::cin, userInputStr);
+
+    return 0;
+}
+
+void GetCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters)
+{
+	std::vector<std::string> inputStrTokens;
+	SplitStringUsingRegex(userInputStr, inputStrTokens, std::regex("\\s+")); // match whitespaces
+	
+	// Get command in upper case form
+	commandStr = inputStrTokens[0];
+	std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
+
+	if (inputStrTokens.size() > 1)
+	{
+		parameters.assign(inputStrTokens.begin() + 1, inputStrTokens.end());
+	}
+}
+
+void SplitStringUsingRegex(const std::string& str, std::vector<std::string>& stringTokens, const std::regex expression)
+{
+	std::sregex_token_iterator tokensBegin(str.begin(), str.end(), expression, -1);
+	std::sregex_token_iterator tokensEnd;
+	stringTokens.assign(tokensBegin, tokensEnd);
+}
+
+InputCommand InterpretCommand(std::string command)
 {
 	if (command == "") return InputCommand::NoInput;
 
 	std::vector<std::string> validCommands = {
 		"Q",				// Quit (end of input)
 		"G",				// Image Group (stack)
-		"J", "JPEG",		// Image formats
+		"J", "JPEG",		// Image types
 		"JP2", "JPEG2000",
 		"BMP"
 	};
-	// TODO: Make use of ENUM names
+
 	auto elementIter = std::find(validCommands.begin(), validCommands.end(), command);
 
-	if      (elementIter == validCommands.end())	return InputCommand::Invalid;
+	if (elementIter == validCommands.end())			return InputCommand::Invalid;
 	else if (*elementIter == validCommands[0])		return InputCommand::EndOfInput;
 	else if (*elementIter == validCommands[1])		return InputCommand::AddImageStack;
 	else											return InputCommand::AddImageType;
 }
 
-InputCommand AttemptAddImageFromInput(const std::string& imageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
+InputCommand AttemptToAddImageFromInput(const std::string& imageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
 {
-	ImageType imageType = ImageTypeStringToEnum(imageTypeStr);
+	Image::Type imageType = Image::TypeToEnum(imageTypeStr);
 
-	if (imageType == ImageType::UNKNOWN)
+	if (imageType == Image::UNKNOWN)
 	{
-		std::cout << "\n The input [" << imageTypeStr << "] is an unknown image type. \n\n";
+		PrintWarning(" The input [" + imageTypeStr + "] is an unknown image type. \n");
 	}
 	else if (parameters.size() < 2 || parameters.size() > 2)
 	{
-		std::cout << "\n Invalid image dimensions. Please type the command in this form: [" + imageTypeStr + " width height]\n\n";
+		PrintWarning(" Invalid image dimensions. Please type the command in this form: [" + imageTypeStr + " width height]\n");
 	}
 	else
 	{
@@ -47,7 +137,7 @@ InputCommand AttemptAddImageFromInput(const std::string& imageTypeStr, const Inp
 
 		if (width < 0 || height < 0)
 		{
-			std::cout << "\n Image dimensions must not be negative! \n\n";
+			PrintWarning(" Image dimensions must not be negative! \n");
 		}
 		else
 		{
@@ -59,27 +149,26 @@ InputCommand AttemptAddImageFromInput(const std::string& imageTypeStr, const Inp
 	return InputCommand::Invalid;
 }
 
-InputCommand AttemptAddImageStackFromInput(const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
+InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
 {
 	if (parameters.size() == 0)
 	{
-		std::cout << "\n You must supply at least one image id to the image group: [G i, i, ...]\n\n";
+		PrintWarning(" You must supply at least one image id to the image group: [G i, i, ...]\n");
 	}
 	else
 	{
-		std::vector<ImageId> imageIds(0);
+		std::vector<Image::Id> imageIds(0);
 
 		// Extract ids from parameters
-		// TODO: commas?
 		for (const auto& param : parameters)
 		{
-			try 
+			try
 			{
 				int id = std::stoi(param);
 				int arrayIndex = id - 1;
 				if (arrayIndex < 0 || arrayIndex >= storageEstimator.NumberOfImages())
 				{
-					std::cout << " " << param << " does not match any of the image indices. Try again.\n";
+					PrintWarning(" " + param + " does not match any of the image indices. Try again.");
 					return InputCommand::Invalid;
 				}
 
@@ -87,25 +176,10 @@ InputCommand AttemptAddImageStackFromInput(const InputParameters& parameters, Im
 			}
 			catch (...)
 			{
-				std::cout << " " << param << " is not a valid parameter. Try again.\n";
+				PrintWarning(" " + param + " is not a valid parameter. Try again.");
 				return InputCommand::Invalid;
 			}
 		}
-
-		// Verify that images does not exist in other stacks
-		//for (const auto& imageStack : imageStacks)
-		//{
-		//	for (const auto& id : imageIds)
-		//	{
-		//		if (imageStack.ContainsImage(images[id]))
-		//		{
-		//			std::cout << " The image [" + std::to_string(id) + "] already exists in another group. Try again.\n";
-		//			return InputCommand::Invalid;
-		//		}
-		//	}
-		//}
-
-		//imageStacks.push_back(ImageStack(images, imageIds));
 
 		storageEstimator.AddStack(imageIds);
 
@@ -113,73 +187,4 @@ InputCommand AttemptAddImageStackFromInput(const InputParameters& parameters, Im
 	}
 
 	return InputCommand::Invalid;
-}
-
-int main()
-{
-	std::cout << 
-R"(	Storage calculator by Denny Lindberg
-
-	Enter one line for each image/group using the formats: 
-		"type width height"
-		"G i, i, ..." 
-		
-		Exit with "Q"
-
-
-
-)";
-	ImageStorageEstimator storageEstimator;
-
-	std::string userInputStr;
-	std::vector<std::string> inputTokens;
-
-	InputCommand command = InputCommand::NoInput;
-	while (command != InputCommand::EndOfInput)
-	{
-		// Request input
-		std::cout << "Add image/group: ";
-		std::getline(std::cin, userInputStr);
-
-		// Extract command
-		const std::regex matchWhitespaces("\\s+");
-		SplitStringUsingRegex(userInputStr, inputTokens, matchWhitespaces);
-		std::string commandstr = inputTokens[0];
-
-		// Extract parameters
-		InputParameters parameters;
-		if (inputTokens.size() > 1) parameters.assign(inputTokens.begin() + 1, inputTokens.end());
-
-		// Execute command
-		command = InterpretCommand(commandstr);
-		switch (command)
-		{
-		case InputCommand::NoInput:
-			command = InputCommand::Successful;
-			break;
-
-		case InputCommand::Invalid:
-			std::cout << "\n The input [" << commandstr << "] is not a valid command!\n\n";
-			break;
-
-		case InputCommand::AddImageStack:
-			command = AttemptAddImageStackFromInput(parameters, storageEstimator);
-			break;
-
-		case InputCommand::AddImageType:
-			command = AttemptAddImageFromInput(commandstr, parameters, storageEstimator);
-			break;
-		}
-
-		std::cout << "\n";
-
-		if (command == InputCommand::Successful)
-		{
-			std::cout << storageEstimator.ToString() + "\n";
-		}
-	} 
-	
-	//std::getline(std::cin, userInput);
-
-    return 0;
 }

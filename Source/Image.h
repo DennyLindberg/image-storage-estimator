@@ -3,72 +3,110 @@
 #include <string>
 #include <assert.h>
 
-typedef unsigned int ImageId;
-typedef unsigned int ImageDimension;
-typedef std::vector<class Image> ImageVector;
-
-enum class ImageType { JPEG, JPEG2000, BMP, UNKNOWN };
-std::string ImageTypeToString(ImageType type)
+namespace Image
 {
-	const std::string names[4] = { "JPEG", "JPEG2000", "BMP", "UNKNOWN" };
-	return names[(int)type];
-}
-ImageType ImageTypeStringToEnum(std::string type)
-{
-	if (type == "J" || type == "JPEG")	 return ImageType::JPEG;
-	if (type == "JP2" || type == "JPEG2000") return ImageType::JPEG2000;
-	if (type == "BMP")						 return ImageType::BMP;
+	typedef unsigned int Id;
+	typedef unsigned int Dimension;
+	typedef unsigned int StorageSize;
+	typedef std::vector<class Info> Vector;
 
-	return ImageType::UNKNOWN;
-}
+	enum Type { JPEG, JPEG2000, BMP, UNKNOWN };
 
-
-class Image
-{
-public:
-	ImageId id = 0;
-	ImageType type = ImageType::BMP;
-	ImageDimension width = 0;
-	ImageDimension height = 0;
-
-public:
-	~Image() = default;
-
-	Image(ImageId imageId, ImageType imageType, ImageDimension imageWidth, ImageDimension imageHeight)
-		: id{ imageId }, type {	imageType }, width{ imageWidth }, height{ imageHeight }
-	{}
-
-	Image(ImageId imageId, ImageType imageType, int imageWidth, int imageHeight)
-		: id{ imageId }, type{ imageType }
+	Image::Type TypeToEnum(std::string type)
 	{
-		assert(imageWidth >= 0 && imageHeight >= 0);
-		width = abs(imageWidth);
-		height = abs(imageHeight);
+		if (type == "J" || type == "JPEG")		 return Image::JPEG;
+		if (type == "JP2" || type == "JPEG2000") return Image::JPEG2000;
+		if (type == "BMP")						 return Image::BMP;
+
+		return Image::UNKNOWN;
 	}
 
-	unsigned int GetSizeInBytes() const
+	std::vector<std::string> TypesToStringVector()
 	{
-		switch (type)
+		return { "JPEG", "JPEG2000", "BMP" };
+	}
+
+	std::string TypeToString(Image::Type type)
+	{
+		const std::vector<std::string> enumNames = TypesToStringVector();
+		return enumNames[(int)type];
+	}
+
+	class Info
+	{
+	public:
+		Image::Id id = 0;
+		Image::Type type = Image::BMP;
+		Image::Dimension width = 0;
+		Image::Dimension height = 0;
+
+	public:
+		~Info() = default;
+
+		Info(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
+			: id{ imageId }, type {	imageType }, width{ imageWidth }, height{ imageHeight }
+		{}
+
+		Info(Image::Id imageId, Image::Type imageType, int imageWidth, int imageHeight)
+			: id{ imageId }, type{ imageType }
 		{
-		case ImageType::JPEG2000:
-			return (unsigned int)(width * height * 0.4 / log(log(width * height + 16)));
-
-		case ImageType::JPEG:
-		case ImageType::BMP:
-		default:
-			return CalculatePyramidSizeInBytes(width, height);
+			assert(imageWidth >= 0 && imageHeight >= 0);
+			width = abs(imageWidth);
+			height = abs(imageHeight);
 		}
-	}
 
-	std::string ToString() const
-	{
-		std::string typeStr = ImageTypeToString(type);
-		std::string padding(10 - typeStr.size(), ' ');
-		return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + std::to_string(GetSizeInBytes()) + " bytes";
-	}
+		Image::StorageSize GetSizeInBytes() const
+		{
+			switch (type)
+			{
+			case Image::JPEG2000:
+				return (Image::StorageSize) (width * height * 0.4 / log(log(width * height + 16)));
 
-public:
-	static bool FindImageById(ImageVector& images, ImageId id, ImageVector::iterator& imageLocation)
+			case Image::JPEG:
+			case Image::BMP:
+			default:
+				return CalculatePyramidSizeInBytes();
+			}
+		}
+
+		std::string ToString() const
+		{
+			std::string typeStr = Image::TypeToString(type);
+			std::string padding(10 - typeStr.size(), ' ');
+			return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + std::to_string(GetSizeInBytes()) + " bytes";
+		}
+
+	private:
+		Image::StorageSize CalculatePyramidSizeInBytes() const
+		{
+			const int minimumDimension = 128;
+			Image::Dimension pyramidWidth  = width;
+			Image::Dimension pyramidHeight = height;
+
+			Image::StorageSize totalSize = 0;
+			do
+			{
+				switch (type)
+				{
+				case Image::JPEG:
+					totalSize += (Image::StorageSize) (width * height * 0.2);
+					break;
+
+				case Image::BMP:
+				default:
+					totalSize += pyramidWidth * pyramidHeight;
+					break;
+				}
+
+				pyramidWidth /= 2;
+				pyramidHeight /= 2;
+			} while (pyramidWidth >= minimumDimension && pyramidHeight >= minimumDimension);
+
+			return totalSize;
+		}
+	};
+
+	bool FindById(Image::Vector& images, Image::Id id, Image::Vector::iterator& imageLocation)
 	{
 		imageLocation = images.end();
 
@@ -84,30 +122,6 @@ public:
 
 		return (imageLocation != images.end());
 	}
+}
 
-private:
-	unsigned int CalculatePyramidSizeInBytes(ImageDimension baseWidth, ImageDimension baseHeight) const
-	{
-		const int minimumDimension = 128;
-		unsigned int totalSize = 0;
-		do
-		{
-			switch (type)
-			{
-			case ImageType::JPEG:
-				totalSize += (unsigned int)(width * height * 0.2);
-				break;
 
-			case ImageType::BMP:
-			default:
-				totalSize += width * height;
-				break;
-			}
-
-			baseWidth /= 2;
-			baseHeight /= 2;
-		} while (baseWidth >= minimumDimension && baseHeight >= minimumDimension);
-
-		return totalSize;
-	}
-};

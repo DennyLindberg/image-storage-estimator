@@ -3,96 +3,59 @@
 #include <vector>
 #include "Image.h"
 
-typedef unsigned int StackId;
-
-class ImageStack
+namespace Image
 {
-private:
-	std::vector<Image> images;
+	typedef std::vector<class Stack> StackVector;
 
-public:
-	ImageStack() = default;
-	~ImageStack() = default;
-
-	void AddImage(Image&& newImage)
+	class Stack
 	{
-		images.push_back(newImage);
-	}
+	private:
+		std::vector<Image::Info> images;
 
-	void AddImage(Image& newImage)
-	{
-		images.push_back(newImage);
-	}
+	public:
+		Stack() = default;
+		~Stack() = default;
 
-	void RemoveImage(ImageVector::iterator imageLocation)
-	{
-		images.erase(imageLocation);
-	}
+		void AddImage(Image::Info&& newImage) { images.push_back(newImage); }
+		void AddImage(Image::Info& newImage)  { images.push_back(newImage); }
 
-	bool FindImage(ImageId id, ImageVector::iterator& imageLocation)
-	{
-		return Image::FindImageById(images, id, imageLocation);
-	}
-
-	bool IsEmpty()
-	{
-		return images.size() == 0;
-	}
-
-	bool ContainsImage(const ImageId imageId) const
-	{
-		for (const auto& innerImage : images)
-		{
-			if (innerImage.id == imageId) return true;
+		void RemoveImage(Image::Vector::iterator imageLocation) 
+		{ 
+			images.erase(imageLocation); 
 		}
 
-		return false;
-	}
-
-	bool ContainsImage(const Image& outerImage) const
-	{
-		for (const auto& innerImage : images)
+		bool FindImage(Image::Id id, Image::Vector::iterator& imageLocation)
 		{
-			if (innerImage.id == outerImage.id) return true;
+			return Image::FindById(images, id, imageLocation);
 		}
 
-		return false;
-	}
+		bool IsEmpty() const { return images.size() == 0;	}
 
-	bool ContainsAnyImage(const ImageVector& outerImages) const
-	{
-		for (const auto& outerImage : outerImages)
+		Image::StorageSize GetSizeInBytes() const
 		{
-			for (const auto& innerImage : images)
+			Image::StorageSize totalSize = 0;
+			for (const auto& image : images)
 			{
-				if (innerImage.id == outerImage.id) return true;
+				totalSize += image.GetSizeInBytes();
 			}
+		
+			// Apply compression to stack according to requirements
+			totalSize = (Image::StorageSize) (totalSize / log(images.size() + 3));
+		
+			return totalSize;
 		}
 
-		return false;
-	}
-
-	unsigned int GetSizeInBytes() const
-	{
-		unsigned int totalSize = 0;
-		for (const auto& image : images)
+		std::string ToString() const
 		{
-			totalSize += image.GetSizeInBytes();
+			std::string output;
+			output += "\t(" + std::to_string(images.size()) + " images, compressed to " + std::to_string(GetSizeInBytes()) + " bytes)\n";
+
+			for (const auto& image : images)
+			{
+				output += "\t\t" + image.ToString() + "\n";
+			}
+
+			return output;
 		}
-		// TODO: Make sure this is correct
-		return totalSize;
-	}
-
-	std::string ToString() const
-	{
-		std::string output;
-		output += "\t(" + std::to_string(images.size()) + " images, " + std::to_string(GetSizeInBytes()) + " bytes)\n";
-
-		for (const auto& image : images)
-		{
-			output += "\t\t" + image.ToString() + "\n";
-		}
-
-		return output;
-	}
+	};
 };

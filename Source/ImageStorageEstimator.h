@@ -2,32 +2,31 @@
 
 #include "Image.h"
 #include "ImageStack.h"
-#include "StringUtils.h"
 
-typedef std::vector<class ImageStack> ImageStackVector;
+typedef std::vector<Image::Stack> ImageStackVector;
 
 class ImageStorageEstimator
 {
 private:
-	ImageId idCounter = 0;
-	ImageVector images;
-	ImageStackVector imageStacks;
+	Image::Id idCounter = 0;
+	Image::Vector images;
+	Image::StackVector imageStacks;
 
 public:
 	ImageStorageEstimator() = default;
 	~ImageStorageEstimator() = default;
 	
-	void AddImage(ImageType imageType, ImageDimension width, ImageDimension height)
+	void AddImage(Image::Type imageType, Image::Dimension width, Image::Dimension height)
 	{
-		images.push_back(Image(++idCounter, imageType, width, height));
+		images.push_back(Image::Info(++idCounter, imageType, width, height));
 	}
 
-	void AddStack(std::vector<ImageId>& imageIds)
+	void AddStack(std::vector<Image::Id>& imageIds)
 	{
-		ImageVector::iterator imageLocation;
+		Image::Vector::iterator imageLocation;
 		ImageStackVector::iterator imageStackLocation;
 
-		ImageStack newStack;
+		Image::Stack newStack;
 		for (auto id : imageIds)
 		{ 
 			if (FindImageOutsideStacks(id, imageLocation))
@@ -38,7 +37,7 @@ public:
 			{
 				if (FindImageInParentStack(id, imageStackLocation, imageLocation))
 				{
-					ImageStack& sourceStack = *imageStackLocation;
+					Image::Stack& sourceStack = *imageStackLocation;
 					MoveImageBetweenStacks(imageLocation, sourceStack, newStack);
 
 					if (sourceStack.IsEmpty())
@@ -94,12 +93,12 @@ public:
 	}
 
 private:
-	bool FindImageOutsideStacks(ImageId id, ImageVector::iterator& imageLocation)
+	bool FindImageOutsideStacks(Image::Id id, Image::Vector::iterator& imageLocation)
 	{
-		return Image::FindImageById(images, id, imageLocation);
+		return Image::FindById(images, id, imageLocation);
 	}
 
-	bool FindImageInParentStack(ImageId id, ImageStackVector::iterator& parentStack, ImageVector::iterator& imageLocation)
+	bool FindImageInParentStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::Vector::iterator& imageLocation)
 	{
 		parentStack = imageStacks.end();
 
@@ -115,13 +114,13 @@ private:
 		return false;
 	}
 
-	void MoveImageToStack(ImageVector::iterator location, ImageStack& stack)
+	void MoveImageToStack(Image::Vector::iterator location, Image::Stack& stack)
 	{
 		stack.AddImage(*location);
 		images.erase(location);
 	}
 
-	void MoveImageBetweenStacks(ImageVector::iterator imageLocation, ImageStack& sourceStackLocation, ImageStack& targetStack)
+	void MoveImageBetweenStacks(Image::Vector::iterator imageLocation, Image::Stack& sourceStackLocation, Image::Stack& targetStack)
 	{
 		targetStack.AddImage(*imageLocation);
 		sourceStackLocation.RemoveImage(imageLocation);

@@ -28,6 +28,7 @@ workspace "SectraAssignmentWorkspace"
     debugdir(binary_target_dir)
     
     filter { "platforms:Win64" }
+        defines { "WINDOWS" }
         system "Windows"
         architecture "x64"
     
