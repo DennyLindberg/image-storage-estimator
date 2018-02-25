@@ -70,11 +70,9 @@ public:
 public:
 	static bool FindImageById(ImageVector& images, ImageId id, ImageVector::iterator& imageLocation)
 	{
-		if (images.size() == 0)
-		{
-			imageLocation = images.end();
-			return false;
-		}
+		imageLocation = images.end();
+
+		if (images.size() == 0) return false;
 
 		for (int index = 0; index<images.size(); ++index)
 		{
