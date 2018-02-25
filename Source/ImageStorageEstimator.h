@@ -35,7 +35,7 @@ public:
 			}
 			else
 			{
-				if (FindImageInParentStack(id, imageStackLocation, imageLocation))
+				if (FindImageInStack(id, imageStackLocation, imageLocation))
 				{
 					Image::Stack& sourceStack = *imageStackLocation;
 					MoveImageBetweenStacks(imageLocation, sourceStack, newStack);
@@ -53,7 +53,7 @@ public:
 
 	size_t NumberOfImages() const
 	{
-		return idCounter; // images can be hidden inside stacks, don't use vector size
+		return idCounter;
 	}
 
 	size_t NumberOfStacks() const
@@ -61,17 +61,17 @@ public:
 		return imageStacks.size();
 	}
 
-	Image::StorageSize GetSizeInBytes() const
+	Image::StorageSize StorageSize() const
 	{
 		Image::StorageSize totalSize = 0;
 		for (auto &image : images)
 		{
-			totalSize += image.GetSizeInBytes();
+			totalSize += image.StorageSize();
 		}
 
 		for (auto &stack : imageStacks)
 		{
-			totalSize += stack.GetSizeInBytes();
+			totalSize += stack.StorageSize();
 		}
 
 		return totalSize;
@@ -81,7 +81,6 @@ public:
 	{
 		std::string outputString;
 
-		//outputString += "\tImages\n";
 		if (images.size() == 0)
 		{
 			outputString += "\tNo images outside stacks\n";
@@ -107,7 +106,7 @@ public:
 				outputString += "\tStack:\n" + stack.ToString() + "\n";
 			}
 		}
-		outputString += "\n\tTotal Size: " + Image::StorageSizeToString(GetSizeInBytes()) + " bytes\n\n";
+		outputString += "\n\tTotal Size: " + Image::StorageSizeToString(StorageSize()) + " bytes\n\n";
 
 		return outputString;
 	}
@@ -118,7 +117,7 @@ private:
 		return Image::FindById(images, id, imageLocation);
 	}
 
-	bool FindImageInParentStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::Vector::iterator& imageLocation)
+	bool FindImageInStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::Vector::iterator& imageLocation)
 	{
 		parentStack = imageStacks.end();
 

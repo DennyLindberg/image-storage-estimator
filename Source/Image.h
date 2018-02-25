@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <string>
 #include <assert.h>
 
@@ -21,14 +22,9 @@ namespace Image
 		return Image::UNKNOWN;
 	}
 
-	std::vector<std::string> TypesToStringVector()
-	{
-		return { "JPEG", "JPEG2000", "BMP" };
-	}
-
 	std::string TypeToString(Image::Type type)
 	{
-		const std::vector<std::string> enumNames = TypesToStringVector();
+		const std::vector<std::string> enumNames = { "JPEG", "JPEG2000", "BMP" };
 		return enumNames[(int)type];
 	}
 
@@ -80,7 +76,7 @@ namespace Image
 			height = abs(imageHeight);
 		}
 
-		Image::StorageSize GetSizeInBytes() const
+		Image::StorageSize StorageSize() const
 		{
 			switch (type)
 			{
@@ -98,7 +94,7 @@ namespace Image
 		{
 			std::string typeStr = Image::TypeToString(type);
 			std::string padding(10 - typeStr.size(), ' ');
-			return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + Image::StorageSizeToString(GetSizeInBytes()) + " bytes";
+			return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + Image::StorageSizeToString(StorageSize()) + " bytes";
 		}
 
 	private:

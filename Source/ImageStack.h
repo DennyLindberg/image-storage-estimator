@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include "Image.h"
 
 namespace Image
@@ -16,7 +17,8 @@ namespace Image
 		Stack() = default;
 		~Stack() = default;
 
-		void AddImage(Image::Info&& newImage) { images.push_back(newImage); }
+		bool IsEmpty() const { return images.size() == 0;	}
+
 		void AddImage(Image::Info& newImage)  { images.push_back(newImage); }
 
 		void RemoveImage(Image::Vector::iterator imageLocation) 
@@ -29,14 +31,12 @@ namespace Image
 			return Image::FindById(images, id, imageLocation);
 		}
 
-		bool IsEmpty() const { return images.size() == 0;	}
-
-		Image::StorageSize GetSizeInBytes() const
+		Image::StorageSize StorageSize() const
 		{
 			Image::StorageSize totalSize = 0;
 			for (const auto& image : images)
 			{
-				totalSize += image.GetSizeInBytes();
+				totalSize += image.StorageSize();
 			}
 		
 			// Apply compression to stack according to requirements
@@ -54,7 +54,7 @@ namespace Image
 				output += "\t  " + image.ToString() + "\n";
 			}
 
-			output += "\t\t" + std::to_string(images.size()) + " images, compressed to " + Image::StorageSizeToString(GetSizeInBytes()) + " bytes\n";
+			output += "\t\t" + std::to_string(images.size()) + " images, compressed to " + Image::StorageSizeToString(StorageSize()) + " bytes\n";
 
 			return output;
 		}

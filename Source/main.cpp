@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <regex>
 
 #include "ConsoleUtils.h"
 #include "ImageStorageEstimator.h"
