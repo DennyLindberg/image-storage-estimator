@@ -48,12 +48,13 @@ namespace Image
 		std::string ToString() const
 		{
 			std::string output;
-			output += "\t(" + std::to_string(images.size()) + " images, compressed to " + Image::StorageSizeToString(GetSizeInBytes()) + " bytes)\n";
 
 			for (const auto& image : images)
 			{
-				output += "\t\t" + image.ToString() + "\n";
+				output += "\t  " + image.ToString() + "\n";
 			}
+
+			output += "\t\t" + std::to_string(images.size()) + " images, compressed to " + Image::StorageSizeToString(GetSizeInBytes()) + " bytes\n";
 
 			return output;
 		}

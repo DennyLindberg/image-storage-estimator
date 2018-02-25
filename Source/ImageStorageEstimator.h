@@ -81,29 +81,33 @@ public:
 	{
 		std::string outputString;
 
-		outputString += "\tImages\n";
-		if (NumberOfImages() == 0)
+		//outputString += "\tImages\n";
+		if (images.size() == 0)
 		{
-			outputString += "\tNo images";
+			outputString += "\tNo images outside stacks\n";
 		}
-		for (const auto& image : images)
+		else
 		{
-			outputString += "\t" + image.ToString() + "\n";
+			for (const auto& image : images)
+			{
+				outputString += "\t" + image.ToString() + "\n";
+			}
 		}
-		outputString += "\n\n";
+		outputString += "\n";
 
 
-
-		outputString += "\tImage Groups\n";
 		if (NumberOfStacks() == 0)
 		{
-			outputString += "\tNo image groups";
+			outputString += "\tNo image stacks\n";
 		}
-		for (const auto& stack : imageStacks)
+		else
 		{
-			outputString += stack.ToString() + "\n";
+			for (const auto& stack : imageStacks)
+			{
+				outputString += "\tStack:\n" + stack.ToString() + "\n";
+			}
 		}
-		outputString += "\n\n\n\tTotal Size: " + Image::StorageSizeToString(GetSizeInBytes()) + " bytes\n\n";
+		outputString += "\n\tTotal Size: " + Image::StorageSizeToString(GetSizeInBytes()) + " bytes\n\n";
 
 		return outputString;
 	}

@@ -104,28 +104,20 @@ namespace Image
 	private:
 		Image::StorageSize CalculatePyramidSizeInBytes() const
 		{
-			const int minimumDimension = 128;
+			assert(type == Image::JPEG || type == Image::BMP);
+			double compressionFactor = (type == Image::JPEG) ? 0.2 : 1.0;
+
+			const int minimumPyramidDimension = 128;
+
 			Image::Dimension pyramidWidth  = width;
 			Image::Dimension pyramidHeight = height;
-
 			Image::StorageSize totalSize = 0;
 			do
 			{
-				switch (type)
-				{
-				case Image::JPEG:
-					totalSize += (Image::StorageSize) (pyramidWidth * pyramidHeight * 0.2);
-					break;
-
-				case Image::BMP:
-				default:
-					totalSize += pyramidWidth * pyramidHeight;
-					break;
-				}
-
+				totalSize += (Image::StorageSize) (pyramidWidth * pyramidHeight * compressionFactor);
 				pyramidWidth /= 2;
 				pyramidHeight /= 2;
-			} while (pyramidWidth >= minimumDimension && pyramidHeight >= minimumDimension);
+			} while (pyramidWidth >= minimumPyramidDimension && pyramidHeight >= minimumPyramidDimension);
 
 			return totalSize;
 		}
@@ -134,8 +126,6 @@ namespace Image
 	bool FindById(Image::Vector& images, Image::Id id, Image::Vector::iterator& imageLocation)
 	{
 		imageLocation = images.end();
-
-		if (images.size() == 0) return false;
 
 		for (int index = 0; index<images.size(); ++index)
 		{
