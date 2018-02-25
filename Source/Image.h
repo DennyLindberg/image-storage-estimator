@@ -114,7 +114,7 @@ namespace Image
 				switch (type)
 				{
 				case Image::JPEG:
-					totalSize += (Image::StorageSize) (width * height * 0.2);
+					totalSize += (Image::StorageSize) (pyramidWidth * pyramidHeight * 0.2);
 					break;
 
 				case Image::BMP:
