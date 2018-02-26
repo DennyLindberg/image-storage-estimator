@@ -6,7 +6,7 @@
 #include "ImageStorageEstimator.h"
 
 typedef std::vector<std::string> InputParameters;
-enum class InputCommand { NoInput, EndOfInput, AddImageStack, AddImageType, Invalid, Successful };
+enum class InputCommand { NoInput, EndProcess, AddImageStack, AddImageType, Invalid, Finished };
 
 void GetCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters);
 void SplitStringUsingRegex(const std::string& str, std::vector<std::string>& stringTokens, const std::regex expression);
@@ -37,7 +37,7 @@ R"(######################################################################
 	std::string commandStr;
 	InputCommand command = InputCommand::NoInput;
 	InputParameters parameters;
-	while (command != InputCommand::EndOfInput)
+	while (command != InputCommand::EndProcess)
 	{
 		// Fetch input
 		PrintNewLine("Add image/group: ");
@@ -49,7 +49,7 @@ R"(######################################################################
 		switch (command)
 		{
 		case InputCommand::NoInput:
-			command = InputCommand::Successful;
+			command = InputCommand::Finished;
 			break;
 
 		case InputCommand::Invalid:
@@ -65,7 +65,7 @@ R"(######################################################################
 			break;
 		}
 
-		if (command == InputCommand::Successful)
+		if (command == InputCommand::Finished)
 		{
 			PrintNewLine(storageEstimator.ToString());
 		}
@@ -114,7 +114,7 @@ InputCommand InterpretCommand(std::string command)
 	auto elementIter = std::find(validCommands.begin(), validCommands.end(), command);
 
 	if (elementIter == validCommands.end())			return InputCommand::Invalid;
-	else if (*elementIter == validCommands[0])		return InputCommand::EndOfInput;
+	else if (*elementIter == validCommands[0])		return InputCommand::EndProcess;
 	else if (*elementIter == validCommands[1])		return InputCommand::AddImageStack;
 	else											return InputCommand::AddImageType;
 }
@@ -153,7 +153,7 @@ InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr
 		else
 		{
 			storageEstimator.AddImage(imageType, abs(width), abs(height));
-			return InputCommand::Successful;
+			return InputCommand::Finished;
 		}
 	}
 
@@ -194,7 +194,7 @@ InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, 
 
 		storageEstimator.AddStack(imageIds);
 
-		return InputCommand::Successful;
+		return InputCommand::Finished;
 	}
 
 	return InputCommand::Invalid;

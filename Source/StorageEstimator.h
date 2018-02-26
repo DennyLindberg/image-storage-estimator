@@ -37,7 +37,7 @@ namespace StorageEstimator
 		template<typename... Args>
 		SharedPtr MakeSharedPtrByType(Image::Type type, Args... args)
 		{
-
+			// This function expects args to match the arguments for Image::Base for any created instance
 			switch (type)
 			{
 			case Image::Type::JPEG:
@@ -48,7 +48,7 @@ namespace StorageEstimator
 				return std::make_shared<Image::BMP>(args...);
 			case Image::Type::UNKNOWN:
 			default:
-				throw std::invalid_argument("Unknown image type supplied to AddImage");
+				throw std::invalid_argument("Unknown image type supplied to MakeSharedPtrByType");
 			}
 
 		}

@@ -17,24 +17,7 @@ public:
 	
 	void AddImage(Image::Type imageType, Image::Dimension width, Image::Dimension height)
 	{
-		images.push_back(Image::MakeSharedPtrByType(imageType, ++idCounter, imageType, width, height));
-
-		/*switch (imageType)
-		{
-		case Image::Type::BMP:
-			images.push_back(std::make_shared<Image::BMP>(++idCounter, imageType, width, height));
-			break;
-		case Image::Type::JPEG:
-			images.push_back(std::make_shared<Image::JPEG>(++idCounter, imageType, width, height));
-			break;
-		case Image::Type::JPEG2000:
-			images.push_back(std::make_shared<Image::JPEG2000>(++idCounter, imageType, width, height));
-			break;
-
-		case Image::Type::UNKNOWN:
-		default:
-			throw std::invalid_argument("Unknown image type supplied to AddImage");
-		}*/
+		images.push_back(Image::MakeSharedPtrByType(imageType, ++idCounter, imageType, width));
 	}
 
 	void AddStack(std::vector<Image::Id>& imageIds)
