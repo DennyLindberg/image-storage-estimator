@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <assert.h>
+#include <memory>
 
 typedef unsigned int StorageSize;
 
@@ -24,14 +25,34 @@ namespace StorageEstimator
 	{
 		typedef unsigned int Id;
 		typedef unsigned int Dimension;
-		typedef std::vector<class Base*> PointerVector;
+		typedef std::shared_ptr<class Base> SharedPtr;
+		typedef std::vector<Image::SharedPtr> SharedPtrVector;
 		typedef std::vector<class Stack> StackVector;
 
 
 		enum class Type { JPEG, JPEG2000, BMP, UNKNOWN };
 		std::string TypeToString(Image::Type type);
 		Image::Type TypeToEnum(std::string type);
-		bool FindById(Image::PointerVector& images, Image::Id id, Image::PointerVector::iterator& imageLocation);
+
+		template<typename... Args>
+		SharedPtr MakeSharedPtrByType(Image::Type type, Args... args)
+		{
+
+			switch (type)
+			{
+			case Image::Type::JPEG:
+				return std::make_shared<Image::JPEG>(args...);
+			case Image::Type::JPEG2000:
+				return std::make_shared<Image::JPEG2000>(args...);
+			case Image::Type::BMP:
+				return std::make_shared<Image::BMP>(args...);
+			case Image::Type::UNKNOWN:
+			default:
+				throw std::invalid_argument("Unknown image type supplied to AddImage");
+			}
+
+		}
+		bool FindById(Image::SharedPtrVector& images, Image::Id id, Image::SharedPtrVector::iterator& imageLocation);
 
 		class Base : public StorageEstimator::BaseClass
 		{
@@ -55,25 +76,20 @@ namespace StorageEstimator
 		class Stack : public StorageEstimator::BaseClass
 		{
 		protected:
-			Image::PointerVector images;
+			Image::SharedPtrVector images;
 
 		public:
 			Stack() = default;
 			~Stack()
-			{
-				/*for (auto p : images)
-				{
-					delete p;
-				}*/
-			}
+			{}
 
 			bool IsEmpty() const;
 
-			void AddImage(Image::Base* newImage);
+			void AddImage(Image::SharedPtr newImage);
 
-			void RemoveImage(Image::PointerVector::iterator imageLocation);
+			void RemoveImage(Image::SharedPtrVector::iterator imageLocation);
 
-			bool FindImage(Image::Id id, Image::PointerVector::iterator& imageLocation);
+			bool FindImage(Image::Id id, Image::SharedPtrVector::iterator& imageLocation);
 
 			virtual StorageSize Size() const override;
 

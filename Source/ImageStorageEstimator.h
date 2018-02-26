@@ -1,49 +1,45 @@
 #pragma once
 
 #include "StorageEstimator.h"
-
 using namespace StorageEstimator;
 
 class ImageStorageEstimator
 {
 private:
 	Image::Id idCounter = 0;
-	Image::PointerVector images;
+	Image::SharedPtrVector images;
 	Image::StackVector imageStacks;
 
 public:
 	ImageStorageEstimator() = default;
 	~ImageStorageEstimator()
-	{
-	/*	for (auto p : images)
-		{
-			delete p;
-		}*/
-	}
+	{}
 	
 	void AddImage(Image::Type imageType, Image::Dimension width, Image::Dimension height)
 	{
-		switch (imageType)
+		images.push_back(Image::MakeSharedPtrByType(imageType, ++idCounter, imageType, width, height));
+
+		/*switch (imageType)
 		{
 		case Image::Type::BMP:
-			images.push_back(new Image::BMP(++idCounter, imageType, width, height));
+			images.push_back(std::make_shared<Image::BMP>(++idCounter, imageType, width, height));
 			break;
 		case Image::Type::JPEG:
-			images.push_back(new Image::JPEG(++idCounter, imageType, width, height));
+			images.push_back(std::make_shared<Image::JPEG>(++idCounter, imageType, width, height));
 			break;
 		case Image::Type::JPEG2000:
-			images.push_back(new Image::JPEG2000(++idCounter, imageType, width, height));
+			images.push_back(std::make_shared<Image::JPEG2000>(++idCounter, imageType, width, height));
 			break;
 
 		case Image::Type::UNKNOWN:
 		default:
 			throw std::invalid_argument("Unknown image type supplied to AddImage");
-		}
+		}*/
 	}
 
 	void AddStack(std::vector<Image::Id>& imageIds)
 	{
-		Image::PointerVector::iterator imageLocation;
+		Image::SharedPtrVector::iterator imageLocation;
 		Image::StackVector::iterator imageStackLocation;
 
 		Image::Stack newStack;
@@ -132,12 +128,12 @@ public:
 	}
 
 private:
-	bool FindImageOutsideStacks(Image::Id id, Image::PointerVector::iterator& imageLocation)
+	bool FindImageOutsideStacks(Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 	{
 		return Image::FindById(images, id, imageLocation);
 	}
 
-	bool FindImageInStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::PointerVector::iterator& imageLocation)
+	bool FindImageInStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::SharedPtrVector::iterator& imageLocation)
 	{
 		parentStack = imageStacks.end();
 
@@ -153,13 +149,13 @@ private:
 		return false;
 	}
 
-	void MoveImageToStack(Image::PointerVector::iterator location, Image::Stack& stack)
+	void MoveImageToStack(Image::SharedPtrVector::iterator location, Image::Stack& stack)
 	{
 		stack.AddImage(*location);
 		images.erase(location);
 	}
 
-	void MoveImageBetweenStacks(Image::PointerVector::iterator imageLocation, Image::Stack& sourceStackLocation, Image::Stack& targetStack)
+	void MoveImageBetweenStacks(Image::SharedPtrVector::iterator imageLocation, Image::Stack& sourceStackLocation, Image::Stack& targetStack)
 	{
 		targetStack.AddImage(*imageLocation);
 		sourceStackLocation.RemoveImage(imageLocation);

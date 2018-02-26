@@ -48,7 +48,8 @@ namespace StorageEstimator
 			return Image::Type::UNKNOWN;
 		}
 
-		bool FindById(Image::PointerVector& images, Image::Id id, Image::PointerVector::iterator& imageLocation)
+
+		bool FindById(Image::SharedPtrVector& images, Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 		{
 			imageLocation = images.end();
 
@@ -87,14 +88,14 @@ namespace StorageEstimator
 
 		bool Stack::IsEmpty() const { return images.size() == 0; }
 
-		void Stack::AddImage(Image::Base* newImage) { images.push_back(newImage); }
+		void Stack::AddImage(Image::SharedPtr newImage) { images.push_back(newImage); }
 
-		void Stack::RemoveImage(Image::PointerVector::iterator imageLocation)
+		void Stack::RemoveImage(Image::SharedPtrVector::iterator imageLocation)
 		{
 			images.erase(imageLocation);
 		}
 
-		bool Stack::FindImage(Image::Id id, Image::PointerVector::iterator& imageLocation)
+		bool Stack::FindImage(Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 		{
 			return Image::FindById(images, id, imageLocation);
 		}
