@@ -48,7 +48,7 @@ namespace StorageEstimator
 			return Image::Type::UNKNOWN;
 		}
 
-		bool FindById(Image::Vector& images, Image::Id id, Image::Vector::iterator& imageLocation)
+		bool FindById(Image::PointerVector& images, Image::Id id, Image::PointerVector::iterator& imageLocation)
 		{
 			imageLocation = images.end();
 
@@ -89,12 +89,12 @@ namespace StorageEstimator
 
 		void Stack::AddImage(Image::Base* newImage) { images.push_back(newImage); }
 
-		void Stack::RemoveImage(Image::Vector::iterator imageLocation)
+		void Stack::RemoveImage(Image::PointerVector::iterator imageLocation)
 		{
 			images.erase(imageLocation);
 		}
 
-		bool Stack::FindImage(Image::Id id, Image::Vector::iterator& imageLocation)
+		bool Stack::FindImage(Image::Id id, Image::PointerVector::iterator& imageLocation)
 		{
 			return Image::FindById(images, id, imageLocation);
 		}

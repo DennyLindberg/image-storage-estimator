@@ -8,12 +8,18 @@ class ImageStorageEstimator
 {
 private:
 	Image::Id idCounter = 0;
-	Image::Vector images;
+	Image::PointerVector images;
 	Image::StackVector imageStacks;
 
 public:
 	ImageStorageEstimator() = default;
-	~ImageStorageEstimator() = default;
+	~ImageStorageEstimator()
+	{
+	/*	for (auto p : images)
+		{
+			delete p;
+		}*/
+	}
 	
 	void AddImage(Image::Type imageType, Image::Dimension width, Image::Dimension height)
 	{
@@ -37,7 +43,7 @@ public:
 
 	void AddStack(std::vector<Image::Id>& imageIds)
 	{
-		Image::Vector::iterator imageLocation;
+		Image::PointerVector::iterator imageLocation;
 		Image::StackVector::iterator imageStackLocation;
 
 		Image::Stack newStack;
@@ -126,12 +132,12 @@ public:
 	}
 
 private:
-	bool FindImageOutsideStacks(Image::Id id, Image::Vector::iterator& imageLocation)
+	bool FindImageOutsideStacks(Image::Id id, Image::PointerVector::iterator& imageLocation)
 	{
 		return Image::FindById(images, id, imageLocation);
 	}
 
-	bool FindImageInStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::Vector::iterator& imageLocation)
+	bool FindImageInStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::PointerVector::iterator& imageLocation)
 	{
 		parentStack = imageStacks.end();
 
@@ -147,13 +153,13 @@ private:
 		return false;
 	}
 
-	void MoveImageToStack(Image::Vector::iterator location, Image::Stack& stack)
+	void MoveImageToStack(Image::PointerVector::iterator location, Image::Stack& stack)
 	{
 		stack.AddImage(*location);
 		images.erase(location);
 	}
 
-	void MoveImageBetweenStacks(Image::Vector::iterator imageLocation, Image::Stack& sourceStackLocation, Image::Stack& targetStack)
+	void MoveImageBetweenStacks(Image::PointerVector::iterator imageLocation, Image::Stack& sourceStackLocation, Image::Stack& targetStack)
 	{
 		targetStack.AddImage(*imageLocation);
 		sourceStackLocation.RemoveImage(imageLocation);

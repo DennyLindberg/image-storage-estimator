@@ -24,14 +24,14 @@ namespace StorageEstimator
 	{
 		typedef unsigned int Id;
 		typedef unsigned int Dimension;
-		typedef std::vector<class Base*> Vector;
+		typedef std::vector<class Base*> PointerVector;
 		typedef std::vector<class Stack> StackVector;
 
 
 		enum class Type { JPEG, JPEG2000, BMP, UNKNOWN };
 		std::string TypeToString(Image::Type type);
 		Image::Type TypeToEnum(std::string type);
-		bool FindById(Image::Vector& images, Image::Id id, Image::Vector::iterator& imageLocation);
+		bool FindById(Image::PointerVector& images, Image::Id id, Image::PointerVector::iterator& imageLocation);
 
 		class Base : public StorageEstimator::BaseClass
 		{
@@ -55,19 +55,25 @@ namespace StorageEstimator
 		class Stack : public StorageEstimator::BaseClass
 		{
 		protected:
-			Image::Vector images;
+			Image::PointerVector images;
 
 		public:
 			Stack() = default;
-			~Stack() = default;
+			~Stack()
+			{
+				/*for (auto p : images)
+				{
+					delete p;
+				}*/
+			}
 
 			bool IsEmpty() const;
 
 			void AddImage(Image::Base* newImage);
 
-			void RemoveImage(Image::Vector::iterator imageLocation);
+			void RemoveImage(Image::PointerVector::iterator imageLocation);
 
-			bool FindImage(Image::Id id, Image::Vector::iterator& imageLocation);
+			bool FindImage(Image::Id id, Image::PointerVector::iterator& imageLocation);
 
 			virtual StorageSize Size() const override;
 
