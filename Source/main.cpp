@@ -8,13 +8,14 @@
 using namespace StorageEstimator;
 
 typedef std::vector<std::string> InputParameters;
-enum class InputCommand { NoInput, EndProcess, AddImageStack, AddImageType, Invalid, Finished };
+enum class InputCommand { NoInput, EndProcess, AddImageStack, AddImageType, Unknown };
+enum class InputResponse { Failed, Success };
 
-void GetCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters);
+void SplitStringToCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters);
 void SplitStringUsingRegex(const std::string& str, std::vector<std::string>& stringTokens, const std::regex expression);
-InputCommand InterpretCommand(std::string command);
-InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator);
-InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator);
+InputCommand InterpretStringAsCommand(std::string command);
+InputResponse AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator);
+InputResponse AttemptToAddImageStackFromInput(const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator);
 
 int main()
 {
@@ -38,38 +39,41 @@ R"(######################################################################
 	std::string userInputStr;
 	std::string commandStr;
 	InputCommand command = InputCommand::NoInput;
+	InputResponse response = InputResponse::Failed;
 	InputParameters parameters;
 	while (command != InputCommand::EndProcess)
 	{
 		// Fetch input
 		PrintLine("Add image/group: ");
 		std::getline(std::cin, userInputStr);
-		GetCommandAndParameters(userInputStr, commandStr, parameters);
+		SplitStringToCommandAndParameters(userInputStr, commandStr, parameters);
 
 		// Evaluate command
-		command = InterpretCommand(commandStr);
+		command = InterpretStringAsCommand(commandStr);
 		switch (command)
 		{
 		case InputCommand::NoInput:
-			command = InputCommand::Finished;
+		case InputCommand::EndProcess:
+			response = InputResponse::Success;
 			break;
 
 		case InputCommand::AddImageStack:
-			command = AttemptToAddImageStackFromInput(parameters, storageEstimator);
+			response = AttemptToAddImageStackFromInput(parameters, storageEstimator);
 			break;
 
 		case InputCommand::AddImageType:
-			command = AttemptToAddImageFromInput(commandStr, parameters, storageEstimator);
+			response = AttemptToAddImageFromInput(commandStr, parameters, storageEstimator);
 			break;
 
-		case InputCommand::Invalid:
+		case InputCommand::Unknown:
 		default:
 			PrintWarning("The input [" + commandStr + "] is not a valid command.");
+			response = InputResponse::Failed;
 			break;
 		}
 
 		// Print updated contents
-		if (command == InputCommand::Finished)
+		if (response == InputResponse::Success && command != InputCommand::EndProcess)
 		{
 			PrintLine(storageEstimator.ToString());
 		}
@@ -78,7 +82,7 @@ R"(######################################################################
     return 0;
 }
 
-void GetCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters)
+void SplitStringToCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters)
 {
 	std::vector<std::string> inputStrTokens;
 	SplitStringUsingRegex(userInputStr, inputStrTokens, std::regex("\\s+")); // match whitespaces
@@ -104,7 +108,7 @@ void SplitStringUsingRegex(const std::string& str, std::vector<std::string>& str
 	stringTokens.assign(tokensBegin, tokensEnd);
 }
 
-InputCommand InterpretCommand(std::string command)
+InputCommand InterpretStringAsCommand(std::string command)
 {
 	if (command == "") return InputCommand::NoInput;
 
@@ -118,13 +122,13 @@ InputCommand InterpretCommand(std::string command)
 
 	auto elementIter = std::find(validCommands.begin(), validCommands.end(), command);
 
-	if (elementIter == validCommands.end())			return InputCommand::Invalid;
+	if (elementIter == validCommands.end())			return InputCommand::Unknown;
 	else if (*elementIter == validCommands[0])		return InputCommand::EndProcess;
 	else if (*elementIter == validCommands[1])		return InputCommand::AddImageStack;
 	else											return InputCommand::AddImageType;
 }
 
-InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator)
+InputResponse AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator)
 {
 	std::string internalImageType(userInputImageTypeStr);
 	if (userInputImageTypeStr == "J" || userInputImageTypeStr == "JPG")
@@ -158,19 +162,19 @@ InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr
 		else
 		{
 			storageEstimator.AddImage(imageType, abs(width), abs(height));
-			return InputCommand::Finished;
+			return InputResponse::Success;
 		}
 	}
 
-	return InputCommand::Invalid;
+	return InputResponse::Failed;
 }
 
-InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator)
+InputResponse AttemptToAddImageStackFromInput(const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator)
 {
 	if (parameters.size() == 0)
 	{
 		PrintWarning("You must supply at least one image id to the image group: [G i, i, ...]");
-		return InputCommand::Invalid;
+		return InputResponse::Failed;
 	}
 	else
 	{
@@ -186,7 +190,7 @@ InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, 
 				if (arrayIndex < 0 || arrayIndex >= storageEstimator.NumberOfImages())
 				{
 					PrintWarning("" + param + " does not match any of the images.");
-					return InputCommand::Invalid;
+					return InputResponse::Failed;
 				}
 
 				imageIds.push_back(abs(id));
@@ -194,19 +198,19 @@ InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, 
 			catch (...)
 			{
 				PrintWarning("'" + param + "' is not a valid parameter.");
-				return InputCommand::Invalid;
+				return InputResponse::Failed;
 			}
 		}
 
 		if (imageIds.size() <= 1)
 		{
 			PrintWarning("You must add at least two images to a group.");
-			return InputCommand::Invalid;
+			return InputResponse::Failed;
 		}
 		else
 		{
 			storageEstimator.AddStack(imageIds);
-			return InputCommand::Finished;
+			return InputResponse::Success;
 		}
 	}
 }
