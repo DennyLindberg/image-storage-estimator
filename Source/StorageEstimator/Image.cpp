@@ -1,36 +1,14 @@
-#include "StorageEstimator.h"
+#include "Image.h"
 
 #include <vector>
 #include <string>
 #include <assert.h>
 
+/*
+	Typedefs and procedures
+*/
 namespace StorageEstimator
 {
-	std::string StorageSizeToString(StorageSize size)
-	{
-		// Formats value from 1234567 to string "1 234 567"
-
-		std::string sizeStr(std::to_string(size));
-		std::string output(sizeStr.size() + sizeStr.size() / 3, ' ');
-
-		size_t outputIndex = output.size();
-		size_t sizeStrIndex = sizeStr.size();
-		size_t count = 0;
-		while (outputIndex > 0 && sizeStrIndex > 0)
-		{
-			output[--outputIndex] = sizeStr[--sizeStrIndex];
-
-			count++;
-			if (count >= 3)
-			{
-				count = 0;
-				--outputIndex;
-			}
-		}
-
-		return output;
-	}
-
 	namespace Image
 	{
 		std::string TypeToString(Image::Type type)
@@ -48,12 +26,11 @@ namespace StorageEstimator
 			return Image::Type::UNKNOWN;
 		}
 
-
 		bool FindById(Image::SharedPtrVector& images, Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 		{
 			imageLocation = images.end();
 
-			for (int index = 0; index<images.size(); ++index)
+			for (int index = 0; index < images.size(); ++index)
 			{
 				if (images[index]->Id() == id)
 				{
@@ -63,11 +40,17 @@ namespace StorageEstimator
 
 			return (imageLocation != images.end());
 		}
+	}
+}
 
 
-
-
-
+/*
+	Classes
+*/
+namespace StorageEstimator
+{
+	namespace Image
+	{
 		Image::Id Base::Id() const { return id; }
 
 		StorageSize Base::Size() const
@@ -81,11 +64,13 @@ namespace StorageEstimator
 			std::string padding(10 - typeStr.size(), ' ');
 			return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + StorageEstimator::StorageSizeToString(Size()) + " bytes";
 		}
+	}
+}
 
-
-
-
-
+namespace StorageEstimator
+{
+	namespace Image
+	{
 		bool Stack::IsEmpty() const { return images.size() == 0; }
 
 		void Stack::AddImage(Image::SharedPtr newImage) { images.push_back(newImage); }
@@ -98,6 +83,11 @@ namespace StorageEstimator
 		bool Stack::FindImage(Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 		{
 			return Image::FindById(images, id, imageLocation);
+		}
+
+		size_t Stack::NumberOfImages() const
+		{
+			return images.size();
 		}
 
 		StorageSize Stack::Size() const
@@ -127,11 +117,13 @@ namespace StorageEstimator
 
 			return output;
 		}
+	}
+}
 
-
-
-
-
+namespace StorageEstimator
+{
+	namespace Image
+	{
 		StorageSize Pyramid::Size() const
 		{
 			const int minimumPyramidDimension = 128;
@@ -152,24 +144,6 @@ namespace StorageEstimator
 		StorageSize Pyramid::PyramidLevelSize(Image::Dimension width, Image::Dimension height) const
 		{
 			return width * height;
-		}
-
-
-
-
-
-		StorageSize JPEG::PyramidLevelSize(Image::Dimension width, Image::Dimension height) const
-		{
-			return (StorageSize)(width * height * 0.2);
-		}
-
-
-
-
-
-		StorageSize JPEG2000::Size() const
-		{
-			return (StorageSize)(width * height * 0.4 / log(log(width * height + 16)));
 		}
 	}
 }

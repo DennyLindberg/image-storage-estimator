@@ -3,7 +3,9 @@
 #include <regex>
 
 #include "ConsoleUtils.h"
-#include "ImageStorageEstimator.h"
+#include "StorageEstimator/CombinedImageStack.h"
+
+using namespace StorageEstimator;
 
 typedef std::vector<std::string> InputParameters;
 enum class InputCommand { NoInput, EndProcess, AddImageStack, AddImageType, Invalid, Finished };
@@ -11,8 +13,8 @@ enum class InputCommand { NoInput, EndProcess, AddImageStack, AddImageType, Inva
 void GetCommandAndParameters(const std::string& userInputStr, std::string& commandStr, InputParameters& parameters);
 void SplitStringUsingRegex(const std::string& str, std::vector<std::string>& stringTokens, const std::regex expression);
 InputCommand InterpretCommand(std::string command);
-InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator);
-InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, ImageStorageEstimator& storageEstimator);
+InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator);
+InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator);
 
 int main()
 {
@@ -31,7 +33,7 @@ R"(######################################################################
 
 )";
 
-	ImageStorageEstimator storageEstimator;
+	StorageEstimator::CombinedImageStack storageEstimator;
 
 	std::string userInputStr;
 	std::string commandStr;
@@ -119,7 +121,7 @@ InputCommand InterpretCommand(std::string command)
 	else											return InputCommand::AddImageType;
 }
 
-InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
+InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr, const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator)
 {
 	std::string internalImageType(userInputImageTypeStr);
 	if (userInputImageTypeStr == "J" || userInputImageTypeStr == "JPG")
@@ -160,7 +162,7 @@ InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr
 	return InputCommand::Invalid;
 }
 
-InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, ImageStorageEstimator& storageEstimator)
+InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, StorageEstimator::CombinedImageStack& storageEstimator)
 {
 	if (parameters.size() == 0)
 	{
@@ -179,7 +181,7 @@ InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, 
 				int arrayIndex = id - 1;
 				if (arrayIndex < 0 || arrayIndex >= storageEstimator.NumberOfImages())
 				{
-					PrintWarning(" " + param + " does not match any of the image indices. Try again.");
+					PrintWarning(" " + param + " does not match any of the images. Try again.");
 					return InputCommand::Invalid;
 				}
 
