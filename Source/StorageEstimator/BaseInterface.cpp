@@ -24,6 +24,9 @@ namespace StorageEstimator
 			}
 		}
 
+		// Remove leading space
+		if (output[0] == ' ') output.erase(output.begin()); 
+
 		return output;
 	}
 }
