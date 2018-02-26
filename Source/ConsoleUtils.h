@@ -1,3 +1,8 @@
+/*
+	Copyright Denny Lindberg 2018
+	www.dennylindberg.com
+*/
+
 #pragma once
 
 #ifdef WINDOWS
