@@ -1,9 +1,5 @@
 #include "Image.h"
 
-#include <vector>
-#include <string>
-#include <assert.h>
-
 /*
 	Typedefs and procedures
 */
@@ -147,5 +143,3 @@ namespace StorageEstimator
 		}
 	}
 }
-
-

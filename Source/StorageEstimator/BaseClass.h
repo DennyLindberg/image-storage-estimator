@@ -18,15 +18,3 @@ namespace StorageEstimator
 		virtual std::string ToString() const = 0;
 	};
 }
-
-
-
-
-
-
-
-
-
-
-
-

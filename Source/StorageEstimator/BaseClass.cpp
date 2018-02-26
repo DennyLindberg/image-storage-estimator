@@ -1,7 +1,5 @@
 #include "BaseClass.h"
 
-#include <string>
-
 namespace StorageEstimator
 {
 	std::string StorageSizeToString(StorageSize size)

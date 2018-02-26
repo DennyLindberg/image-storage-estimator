@@ -42,7 +42,7 @@ R"(######################################################################
 	while (command != InputCommand::EndProcess)
 	{
 		// Fetch input
-		PrintNewLine("Add image/group: ");
+		PrintLine("Add image/group: ");
 		std::getline(std::cin, userInputStr);
 		GetCommandAndParameters(userInputStr, commandStr, parameters);
 
@@ -54,10 +54,6 @@ R"(######################################################################
 			command = InputCommand::Finished;
 			break;
 
-		case InputCommand::Invalid:
-			PrintWarning("\n The input [" + commandStr + "] is not a valid command!\n");
-			break;
-
 		case InputCommand::AddImageStack:
 			command = AttemptToAddImageStackFromInput(parameters, storageEstimator);
 			break;
@@ -65,16 +61,19 @@ R"(######################################################################
 		case InputCommand::AddImageType:
 			command = AttemptToAddImageFromInput(commandStr, parameters, storageEstimator);
 			break;
+
+		case InputCommand::Invalid:
+		default:
+			PrintWarning("The input [" + commandStr + "] is not a valid command.");
+			break;
 		}
 
+		// Print updated contents
 		if (command == InputCommand::Finished)
 		{
-			PrintNewLine(storageEstimator.ToString());
+			PrintLine(storageEstimator.ToString());
 		}
 	} 
-	
-	PrintNewLine("Press enter to quit...");
-	std::getline(std::cin, userInputStr);
 
     return 0;
 }
@@ -84,13 +83,17 @@ void GetCommandAndParameters(const std::string& userInputStr, std::string& comma
 	std::vector<std::string> inputStrTokens;
 	SplitStringUsingRegex(userInputStr, inputStrTokens, std::regex("\\s+")); // match whitespaces
 	
-	// Get command in upper case form
+	// Get command in upper case form (allow both upper/lower case)
 	commandStr = inputStrTokens[0];
 	std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
 
 	if (inputStrTokens.size() > 1)
 	{
 		parameters.assign(inputStrTokens.begin() + 1, inputStrTokens.end());
+	}
+	else
+	{
+		parameters.clear();
 	}
 }
 
@@ -137,11 +140,11 @@ InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr
 
 	if (imageType == Image::Type::UNKNOWN)
 	{
-		PrintWarning(" The input [" + userInputImageTypeStr + "] is an unknown image type. \n");
+		PrintWarning("The input [" + userInputImageTypeStr + "] is an unknown image type.");
 	}
 	else if (parameters.size() < 2 || parameters.size() > 2)
 	{
-		PrintWarning(" Invalid image dimensions. Please type the command in this form: [" + userInputImageTypeStr + " width height]\n");
+		PrintWarning("Invalid image dimensions. Type the command in this form: [" + userInputImageTypeStr + " width height]");
 	}
 	else
 	{
@@ -150,7 +153,7 @@ InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr
 
 		if (width < 0 || height < 0)
 		{
-			PrintWarning(" Image dimensions must not be negative! \n");
+			PrintWarning("Image dimensions must have positive values!");
 		}
 		else
 		{
@@ -166,7 +169,8 @@ InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, 
 {
 	if (parameters.size() == 0)
 	{
-		PrintWarning(" You must supply at least one image id to the image group: [G i, i, ...]\n");
+		PrintWarning("You must supply at least one image id to the image group: [G i, i, ...]");
+		return InputCommand::Invalid;
 	}
 	else
 	{
@@ -181,7 +185,7 @@ InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, 
 				int arrayIndex = id - 1;
 				if (arrayIndex < 0 || arrayIndex >= storageEstimator.NumberOfImages())
 				{
-					PrintWarning(" " + param + " does not match any of the images. Try again.");
+					PrintWarning("" + param + " does not match any of the images.");
 					return InputCommand::Invalid;
 				}
 
@@ -189,15 +193,20 @@ InputCommand AttemptToAddImageStackFromInput(const InputParameters& parameters, 
 			}
 			catch (...)
 			{
-				PrintWarning(" " + param + " is not a valid parameter. Try again.");
+				PrintWarning("'" + param + "' is not a valid parameter.");
 				return InputCommand::Invalid;
 			}
 		}
 
-		storageEstimator.AddStack(imageIds);
-
-		return InputCommand::Finished;
+		if (imageIds.size() <= 1)
+		{
+			PrintWarning("You must add at least two images to a group.");
+			return InputCommand::Invalid;
+		}
+		else
+		{
+			storageEstimator.AddStack(imageIds);
+			return InputCommand::Finished;
+		}
 	}
-
-	return InputCommand::Invalid;
 }
