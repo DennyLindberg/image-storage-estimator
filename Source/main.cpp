@@ -38,9 +38,10 @@ R"(######################################################################
 
 	std::string userInputStr;
 	std::string commandStr;
+	InputParameters parameters;
 	InputCommand command = InputCommand::NoInput;
 	InputResponse response = InputResponse::Failed;
-	InputParameters parameters;
+
 	while (command != InputCommand::EndProcess)
 	{
 		// Fetch input
@@ -146,7 +147,7 @@ InputResponse AttemptToAddImageFromInput(const std::string& userInputImageTypeSt
 	{
 		PrintWarning("The input [" + userInputImageTypeStr + "] is an unknown image type.");
 	}
-	else if (parameters.size() < 2 || parameters.size() > 2)
+	else if (parameters.size() != 2)
 	{
 		PrintWarning("Invalid image dimensions. Type the command in this form: [" + userInputImageTypeStr + " width height]");
 	}

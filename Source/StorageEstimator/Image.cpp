@@ -22,7 +22,7 @@ namespace StorageEstimator
 			return Image::Type::UNKNOWN;
 		}
 
-		bool FindById(Image::SharedPtrVector& images, Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
+		bool FindByIdInVector(Image::SharedPtrVector& images, Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 		{
 			imageLocation = images.end();
 
@@ -31,6 +31,7 @@ namespace StorageEstimator
 				if (images[index]->Id() == id)
 				{
 					imageLocation = (images.begin() + index);
+					break;
 				}
 			}
 
@@ -47,14 +48,12 @@ namespace StorageEstimator
 {
 	namespace Image
 	{
-		Image::Id Base::Id() const { return id; }
-
-		StorageSize Base::Size() const
-		{
-			return width * height;
+		Image::Id AbstractBase::Id() const 
+		{ 
+			return id; 
 		}
 
-		std::string Base::ToString() const
+		std::string AbstractBase::ToString() const
 		{
 			std::string typeStr = Image::TypeToString(type);
 			std::string padding(10 - typeStr.size(), ' ');
@@ -67,9 +66,38 @@ namespace StorageEstimator
 {
 	namespace Image
 	{
-		bool Stack::IsEmpty() const { return images.size() == 0; }
+		StorageSize AbstractPyramid::Size() const
+		{
+			const int minimumPyramidDimension = 128;
 
-		void Stack::AddImage(Image::SharedPtr newImage) { images.push_back(newImage); }
+			Image::Dimension pyramidWidth = width;
+			Image::Dimension pyramidHeight = height;
+			StorageSize totalSize = 0;
+			do
+			{
+				totalSize += PyramidLevelSize(pyramidWidth, pyramidHeight);
+				pyramidWidth /= 2;
+				pyramidHeight /= 2;
+			} while (pyramidWidth >= minimumPyramidDimension && pyramidHeight >= minimumPyramidDimension);
+
+			return totalSize;
+		}
+	}
+}
+
+namespace StorageEstimator
+{
+	namespace Image
+	{
+		bool Stack::IsEmpty() const 
+		{ 
+			return images.size() == 0; 
+		}
+
+		void Stack::AddImage(Image::SharedPtr newImage) 
+		{ 
+			images.push_back(newImage); 
+		}
 
 		void Stack::RemoveImage(Image::SharedPtrVector::iterator imageLocation)
 		{
@@ -78,7 +106,7 @@ namespace StorageEstimator
 
 		bool Stack::FindImage(Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 		{
-			return Image::FindById(images, id, imageLocation);
+			return Image::FindByIdInVector(images, id, imageLocation);
 		}
 
 		size_t Stack::NumberOfImages() const
@@ -112,34 +140,6 @@ namespace StorageEstimator
 			output += "\t\t" + std::to_string(images.size()) + " images, compressed to " + StorageEstimator::StorageSizeToString(Size()) + " bytes\n";
 
 			return output;
-		}
-	}
-}
-
-namespace StorageEstimator
-{
-	namespace Image
-	{
-		StorageSize Pyramid::Size() const
-		{
-			const int minimumPyramidDimension = 128;
-
-			Image::Dimension pyramidWidth = width;
-			Image::Dimension pyramidHeight = height;
-			StorageSize totalSize = 0;
-			do
-			{
-				totalSize += PyramidLevelSize(pyramidWidth, pyramidHeight);
-				pyramidWidth /= 2;
-				pyramidHeight /= 2;
-			} while (pyramidWidth >= minimumPyramidDimension && pyramidHeight >= minimumPyramidDimension);
-
-			return totalSize;
-		}
-
-		StorageSize Pyramid::PyramidLevelSize(Image::Dimension width, Image::Dimension height) const
-		{
-			return width * height;
 		}
 	}
 }

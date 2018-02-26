@@ -8,11 +8,11 @@ namespace StorageEstimator
 {
 	std::string StorageSizeToString(StorageSize size);
 
-	class BaseClass
+	class BaseInterface
 	{
 	public:
-		BaseClass() = default;
-		~BaseClass() = default;
+		BaseInterface() = default;
+		~BaseInterface() = default;
 
 		virtual StorageSize Size() const = 0;
 		virtual std::string ToString() const = 0;

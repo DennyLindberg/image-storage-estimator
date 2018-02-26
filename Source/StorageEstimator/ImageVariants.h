@@ -24,33 +24,33 @@ namespace StorageEstimator
 			}
 		}
 
-		class BMP : virtual public Image::Pyramid
+		class BMP : public Image::AbstractPyramid
 		{
 		public:
 			BMP(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
-				: Image::Pyramid(imageId, imageType, imageWidth, imageHeight)
+				: Image::AbstractPyramid(imageId, imageType, imageWidth, imageHeight)
 			{}
 			~BMP() = default;
 
 			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const override;
 		};
 
-		class JPEG : virtual public Image::Pyramid
+		class JPEG : public Image::AbstractPyramid
 		{
 		public:
 			JPEG(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
-				: Image::Pyramid(imageId, imageType, imageWidth, imageHeight)
+				: Image::AbstractPyramid(imageId, imageType, imageWidth, imageHeight)
 			{}
 			~JPEG() = default;
 
 			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const override;
 		};
 
-		class JPEG2000 : public Image::Base
+		class JPEG2000 : public Image::AbstractBase
 		{
 		public:
 			JPEG2000(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
-				: Image::Base(imageId, imageType, imageWidth, imageHeight)
+				: Image::AbstractBase(imageId, imageType, imageWidth, imageHeight)
 			{}
 			~JPEG2000() = default;
 

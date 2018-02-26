@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BaseClass.h"
+#include "BaseInterface.h"
 
 #include <vector>
 #include <string>
@@ -15,14 +15,14 @@ namespace StorageEstimator
 	{
 		typedef unsigned int Id;
 		typedef unsigned int Dimension;
-		typedef std::shared_ptr<class Base> SharedPtr;
+		typedef std::shared_ptr<class AbstractBase> SharedPtr;
 		typedef std::vector<Image::SharedPtr> SharedPtrVector;
 		typedef std::vector<class Stack> StackVector;
 
 		enum class Type { JPEG, JPEG2000, BMP, UNKNOWN };
 		std::string TypeToString(Image::Type type);
 		Image::Type TypeToEnum(std::string type);
-		bool FindById(Image::SharedPtrVector& images, Image::Id id, Image::SharedPtrVector::iterator& imageLocation);
+		bool FindByIdInVector(Image::SharedPtrVector& images, Image::Id id, Image::SharedPtrVector::iterator& imageLocation);
 	}
 }
 
@@ -33,7 +33,7 @@ namespace StorageEstimator
 {
 	namespace Image
 	{
-		class Base : public StorageEstimator::BaseClass
+		class AbstractBase : public StorageEstimator::BaseInterface
 		{
 		protected:
 			Image::Type type = Image::Type::UNKNOWN;
@@ -42,17 +42,29 @@ namespace StorageEstimator
 			Image::Dimension height = 0;
 
 		public:
-			Base(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
+			AbstractBase(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
 				: id{ imageId }, type{ imageType }, width{ imageWidth }, height{ imageHeight }
 			{}
-			~Base() = default;
+			~AbstractBase() = default;
 
 			Image::Id Id() const;
-			virtual StorageSize Size() const;
+			virtual StorageSize Size() const = 0;
 			virtual std::string ToString() const;
 		};
 
-		class Stack : public StorageEstimator::BaseClass
+		class AbstractPyramid : public Image::AbstractBase
+		{
+		public:
+			AbstractPyramid(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
+				: Image::AbstractBase(imageId, imageType, imageWidth, imageHeight)
+			{}
+			~AbstractPyramid() = default;
+
+			virtual StorageSize Size() const override final;
+			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const = 0;
+		};
+		
+		class Stack : public StorageEstimator::BaseInterface
 		{
 		protected:
 			Image::SharedPtrVector images;
@@ -70,16 +82,5 @@ namespace StorageEstimator
 			virtual std::string ToString() const override;
 		};
 
-		class Pyramid : public Image::Base
-		{
-		public:
-			Pyramid(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
-				: Image::Base(imageId, imageType, imageWidth, imageHeight)
-			{}
-			~Pyramid() = default;
-
-			virtual StorageSize Size() const override final;
-			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const;
-		};
 	}
 }

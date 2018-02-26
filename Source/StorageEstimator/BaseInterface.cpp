@@ -1,4 +1,4 @@
-#include "BaseClass.h"
+#include "BaseInterface.h"
 
 namespace StorageEstimator
 {

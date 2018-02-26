@@ -12,10 +12,12 @@ namespace StorageEstimator
 
 	void CombinedImageStack::AddStack(std::vector<Image::Id>& imageIds)
 	{
+		Image::Stack newStack;
+
+		// Iterators are used to find / move images around
 		Image::SharedPtrVector::iterator imageLocation;
 		Image::StackVector::iterator imageStackLocation;
 
-		Image::Stack newStack;
 		for (auto id : imageIds)
 		{ 
 			if (FindImageOutsideStacks(id, imageLocation))
@@ -102,11 +104,14 @@ namespace StorageEstimator
 
 	bool CombinedImageStack::FindImageOutsideStacks(Image::Id id, Image::SharedPtrVector::iterator& imageLocation)
 	{
-		return Image::FindById(images, id, imageLocation);
+		// returns true and valid iterator on success
+		return Image::FindByIdInVector(images, id, imageLocation);
 	}
 
 	bool CombinedImageStack::FindImageInStack(Image::Id id, Image::StackVector::iterator& parentStack, Image::SharedPtrVector::iterator& imageLocation)
 	{
+		// returns true and valid iterator on success
+
 		parentStack = imageStacks.end();
 
 		for (int index = 0; index<imageStacks.size(); ++index)
