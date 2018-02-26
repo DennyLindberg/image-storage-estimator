@@ -133,7 +133,7 @@ InputCommand AttemptToAddImageFromInput(const std::string& userInputImageTypeStr
 
 	Image::Type imageType = Image::TypeToEnum(internalImageType);
 
-	if (imageType == Image::UNKNOWN)
+	if (imageType == Image::Type::UNKNOWN)
 	{
 		PrintWarning(" The input [" + userInputImageTypeStr + "] is an unknown image type. \n");
 	}

@@ -8,30 +8,7 @@ typedef unsigned int StorageSize;
 
 namespace StorageEstimator
 {
-	std::string StorageSizeToString(StorageSize size)
-	{
-		// Formats value from 1234567 to string "1 234 567"
-
-		std::string sizeStr(std::to_string(size));
-		std::string output(sizeStr.size() + sizeStr.size() / 3, ' ');
-
-		size_t outputIndex = output.size();
-		size_t sizeStrIndex = sizeStr.size();
-		size_t count = 0;
-		while (outputIndex > 0 && sizeStrIndex > 0)
-		{
-			output[--outputIndex] = sizeStr[--sizeStrIndex];
-
-			count++;
-			if (count >= 3)
-			{
-				count = 0;
-				--outputIndex;
-			}
-		}
-
-		return output;
-	}
+	std::string StorageSizeToString(StorageSize size);
 
 	class BaseClass
 	{
@@ -41,47 +18,20 @@ namespace StorageEstimator
 
 		virtual StorageSize Size() const = 0;
 		virtual std::string ToString() const = 0;
-
 	};
 
 	namespace Image
 	{
 		typedef unsigned int Id;
 		typedef unsigned int Dimension;
-		typedef std::vector<class Image::Base> Vector;
-		typedef std::vector<class Image::Stack> StackVector;
+		typedef std::vector<class Base*> Vector;
+		typedef std::vector<class Stack> StackVector;
 
 
-		enum Type { JPEG, JPEG2000, BMP, UNKNOWN };
-		std::string TypeToString(Image::Type type)
-		{
-			const std::vector<std::string> enumNames = { "JPEG", "JPEG2000", "BMP" };
-			return enumNames[(int)type];
-		}
-
-		Image::Type TypeToEnum(std::string type)
-		{
-			if (type == "JPEG")		return Image::Type::JPEG;
-			if (type == "JPEG2000")	return Image::Type::JPEG2000;
-			if (type == "BMP")		return Image::Type::BMP;
-
-			return Image::Type::UNKNOWN;
-		}
-
-		bool FindById(Image::Vector& images, Image::Id id, Image::Vector::iterator& imageLocation)
-		{
-			imageLocation = images.end();
-
-			for (int index = 0; index<images.size(); ++index)
-			{
-				if (images[index].id == id)
-				{
-					imageLocation = (images.begin() + index);
-				}
-			}
-
-			return (imageLocation != images.end());
-		}
+		enum class Type { JPEG, JPEG2000, BMP, UNKNOWN };
+		std::string TypeToString(Image::Type type);
+		Image::Type TypeToEnum(std::string type);
+		bool FindById(Image::Vector& images, Image::Id id, Image::Vector::iterator& imageLocation);
 
 		class Base : public StorageEstimator::BaseClass
 		{
@@ -95,17 +45,12 @@ namespace StorageEstimator
 			Base(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
 				: id{ imageId }, type{ imageType }, width{ imageWidth }, height{ imageHeight }
 			{}
-
 			~Base() = default;
 
-			virtual std::string ToString() const
-			{
-				std::string typeStr = Image::TypeToString(type);
-				std::string padding(10 - typeStr.size(), ' ');
-				return "[" + std::to_string(id) + "]\t" + typeStr + padding + "\t(" + std::to_string(width) + ", " + std::to_string(height) + ")px" + "\t" + StorageEstimator::StorageSizeToString(Size()) + " bytes";
-			}
+			Image::Id Id() const;
+			virtual StorageSize Size() const;
+			virtual std::string ToString() const;
 		};
-
 
 		class Stack : public StorageEstimator::BaseClass
 		{
@@ -113,106 +58,63 @@ namespace StorageEstimator
 			Image::Vector images;
 
 		public:
-			bool IsEmpty() const { return images.size() == 0; }
+			Stack() = default;
+			~Stack() = default;
 
-			void AddImage(Image::Base& newImage) { images.push_back(newImage); }
+			bool IsEmpty() const;
 
-			void RemoveImage(Image::Vector::iterator imageLocation)
-			{
-				images.erase(imageLocation);
-			}
+			void AddImage(Image::Base* newImage);
 
-			bool FindImage(Image::Id id, Image::Vector::iterator& imageLocation)
-			{
-				return Image::FindById(images, id, imageLocation);
-			}
+			void RemoveImage(Image::Vector::iterator imageLocation);
 
-			virtual StorageSize Size() const override
-			{
-				StorageSize totalSize = 0;
-				for (const auto& image : images)
-				{
-					totalSize += image.Size();
-				}
+			bool FindImage(Image::Id id, Image::Vector::iterator& imageLocation);
 
-				// Apply compression to stack according to requirements
-				totalSize = (StorageSize) (totalSize / log(images.size() + 3));
+			virtual StorageSize Size() const override;
 
-				return totalSize;
-			}
-
-			virtual std::string ToString() const
-			{
-				std::string output;
-
-				for (const auto& image : images)
-				{
-					output += "\t  " + image.ToString() + "\n";
-				}
-
-				output += "\t\t" + std::to_string(images.size()) + " images, compressed to " + StorageEstimator::StorageSizeToString(Size()) + " bytes\n";
-
-				return output;
-			}
+			virtual std::string ToString() const override;
 		};
 
 		class Pyramid : public Image::Base
 		{
 		public:
-			virtual StorageSize Size() const override final
-			{
-				const int minimumPyramidDimension = 128;
+			Pyramid(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
+				: Image::Base(imageId, imageType, imageWidth, imageHeight)
+			{}
+			~Pyramid() = default;
 
-				Image::Dimension pyramidWidth = width;
-				Image::Dimension pyramidHeight = height;
-				StorageSize totalSize = 0;
-				do
-				{
-					totalSize += PyramidLevelSize(pyramidWidth, pyramidHeight);
-					pyramidWidth /= 2;
-					pyramidHeight /= 2;
-				} while (pyramidWidth >= minimumPyramidDimension && pyramidHeight >= minimumPyramidDimension);
-
-				return totalSize;
-			}
-
-			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const = 0;
+			virtual StorageSize Size() const override final;
+			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const;
 		};
 
-		class BMP : public Image::Pyramid
+		class BMP : virtual public Image::Pyramid
 		{
 		public:
-			BMP() = default;
+			BMP(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
+				: Image::Pyramid(imageId, imageType, imageWidth, imageHeight)
+			{}
 			~BMP() = default;
-
-			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const override
-			{
-				return width * height;
-			}
 		};
 
-		class JPEG : public Image::Pyramid
+		class JPEG : virtual public Image::Pyramid
 		{
 		public:
-			JPEG() = default;
+			JPEG(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
+				: Image::Pyramid(imageId, imageType, imageWidth, imageHeight)
+			{}
 			~JPEG() = default;
 
-			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const override
-			{
-				return (StorageSize)(width * height * 0.2);
-			}
+			virtual StorageSize PyramidLevelSize(Image::Dimension width, Image::Dimension height) const override;
 		};
 
 		class JPEG2000 : public Image::Base
 		{
 		public:
-			JPEG2000() = default;
+			JPEG2000(Image::Id imageId, Image::Type imageType, Image::Dimension imageWidth, Image::Dimension imageHeight)
+				: Image::Base(imageId, imageType, imageWidth, imageHeight)
+			{}
 			~JPEG2000() = default;
 
-			virtual StorageSize Size() const override
-			{
-				return (StorageSize)(width * height * 0.4 / log(log(width * height + 16)));
-			}
+			virtual StorageSize Size() const override;
 		};
 
 	}

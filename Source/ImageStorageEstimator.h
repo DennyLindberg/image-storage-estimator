@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Image.h"
-#include "ImageStack.h"
+#include "StorageEstimator.h"
 
-typedef std::vector<Image::Stack> ImageStackVector;
+using namespace StorageEstimator;
 
 class ImageStorageEstimator
 {
@@ -18,13 +17,28 @@ public:
 	
 	void AddImage(Image::Type imageType, Image::Dimension width, Image::Dimension height)
 	{
-		images.push_back(Image::Info(++idCounter, imageType, width, height));
+		switch (imageType)
+		{
+		case Image::Type::BMP:
+			images.push_back(new Image::BMP(++idCounter, imageType, width, height));
+			break;
+		case Image::Type::JPEG:
+			images.push_back(new Image::JPEG(++idCounter, imageType, width, height));
+			break;
+		case Image::Type::JPEG2000:
+			images.push_back(new Image::JPEG2000(++idCounter, imageType, width, height));
+			break;
+
+		case Image::Type::UNKNOWN:
+		default:
+			throw std::invalid_argument("Unknown image type supplied to AddImage");
+		}
 	}
 
 	void AddStack(std::vector<Image::Id>& imageIds)
 	{
 		Image::Vector::iterator imageLocation;
-		ImageStackVector::iterator imageStackLocation;
+		Image::StackVector::iterator imageStackLocation;
 
 		Image::Stack newStack;
 		for (auto id : imageIds)
@@ -61,17 +75,17 @@ public:
 		return imageStacks.size();
 	}
 
-	Image::StorageSize StorageSize() const
+	StorageSize Size() const
 	{
-		Image::StorageSize totalSize = 0;
+		StorageSize totalSize = 0;
 		for (auto &image : images)
 		{
-			totalSize += image.StorageSize();
+			totalSize += image->Size();
 		}
 
 		for (auto &stack : imageStacks)
 		{
-			totalSize += stack.StorageSize();
+			totalSize += stack.Size();
 		}
 
 		return totalSize;
@@ -89,7 +103,7 @@ public:
 		{
 			for (const auto& image : images)
 			{
-				outputString += "\t" + image.ToString() + "\n";
+				outputString += "\t" + image->ToString() + "\n";
 			}
 		}
 		outputString += "\n";
@@ -106,7 +120,7 @@ public:
 				outputString += "\tStack:\n" + stack.ToString() + "\n";
 			}
 		}
-		outputString += "\n\tTotal Size: " + Image::StorageSizeToString(StorageSize()) + " bytes\n\n";
+		outputString += "\n\tTotal Size: " + StorageSizeToString(Size()) + " bytes\n\n";
 
 		return outputString;
 	}
