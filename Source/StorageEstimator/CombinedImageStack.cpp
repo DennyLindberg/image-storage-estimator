@@ -7,7 +7,7 @@ namespace StorageEstimator
 {
 	void CombinedImageStack::AddImage(Image::Type imageType, Image::Dimension width, Image::Dimension height)
 	{
-		images.push_back(Image::MakeSharedPtrByType(imageType, ++idCounter, imageType, width, height));
+		Stack::AddImage(Image::MakeSharedPtrByType(imageType, ++idCounter, imageType, width, height));
 	}
 
 	void CombinedImageStack::AddStack(std::vector<Image::Id>& imageIds)

@@ -8,7 +8,6 @@ namespace StorageEstimator
 	{
 	private:
 		Image::Id idCounter = 0;
-		Image::SharedPtrVector images;
 		Image::StackVector imageStacks;
 
 	public:
